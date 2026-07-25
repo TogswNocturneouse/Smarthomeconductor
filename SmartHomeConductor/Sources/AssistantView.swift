@@ -131,6 +131,14 @@ private final class AssistantViewModel: ObservableObject {
 
     private let service = HomeConductorAssistantService()
 
+    func sendLocal(_ text: String, response: String) {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        messages.append(AssistantMessage(role: .user, content: trimmedText))
+        messages.append(AssistantMessage(role: .assistant, content: response))
+        errorMessage = nil
+    }
+
     func send(_ text: String, context: AssistantHomeContext) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty, !isSending else { return }
@@ -144,10 +152,24 @@ private final class AssistantViewModel: ObservableObject {
                 let response = try await service.send(messages: messages, context: context)
                 messages.append(AssistantMessage(role: .assistant, content: response.message))
             } catch {
-                errorMessage = error.localizedDescription
+                messages.append(
+                    AssistantMessage(
+                        role: .assistant,
+                        content: localFallback(context: context)
+                    )
+                )
+                errorMessage = "Gateway unavailable. Response generated from local home state."
             }
             isSending = false
         }
+    }
+
+    private func localFallback(context: AssistantHomeContext) -> String {
+        let offline = context.devices.filter { !$0.isOnline }.map(\.name)
+        if offline.isEmpty {
+            return "The local snapshot looks healthy: \(context.onlineDevices) devices are online and \(context.enabledRules.count) automations are enabled."
+        }
+        return "The local snapshot shows \(context.onlineDevices) devices online. Offline: \(offline.joined(separator: ", "))."
     }
 }
 
@@ -158,8 +180,8 @@ struct AssistantView: View {
 
     private let suggestions = [
         "What needs attention?",
-        "Reduce energy use",
-        "Plan my evening"
+        "Run focus scene",
+        "Turn everything off"
     ]
 
     var body: some View {
@@ -189,18 +211,18 @@ struct AssistantView: View {
                             }
 
                             if let errorMessage = viewModel.errorMessage {
-                                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                                Label(errorMessage, systemImage: "network.slash")
                                     .font(.footnote)
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(AppStyle.amber)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding()
-                                    .background(Color.red.opacity(0.08))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .background(AppStyle.amber.opacity(0.07))
+                                    .clipShape(RoundedRectangle(cornerRadius: 7))
                             }
                         }
                         .padding()
                     }
-                    .background(AppStyle.background.ignoresSafeArea())
+                    .background(Color.clear)
                     .onChange(of: viewModel.messages.count) { _, _ in
                         guard let lastID = viewModel.messages.last?.id else { return }
                         withAnimation {
@@ -212,6 +234,7 @@ struct AssistantView: View {
                 composer
             }
             .navigationTitle("Home Assistant")
+            .background(Color.clear)
         }
     }
 
@@ -219,7 +242,7 @@ struct AssistantView: View {
         HStack {
             Label("Secure gateway", systemImage: "lock.shield.fill")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.teal)
+                .foregroundStyle(AppStyle.violet)
             Spacer()
             Text("\(store.onlineDeviceCount) devices online")
                 .font(.caption)
@@ -227,7 +250,12 @@ struct AssistantView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 9)
-        .background(Color.teal.opacity(0.08))
+        .background(AppStyle.violet.opacity(0.07))
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.7)
+        }
     }
 
     private var suggestionRow: some View {
@@ -237,8 +265,11 @@ struct AssistantView: View {
                     Button(suggestion) {
                         send(suggestion)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.teal)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppStyle.text)
+                    .padding(.horizontal, 12)
+                    .frame(height: 38)
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.violet))
                     .disabled(viewModel.isSending)
                 }
             }
@@ -248,8 +279,16 @@ struct AssistantView: View {
     private var composer: some View {
         HStack(alignment: .bottom, spacing: 10) {
             TextField("Ask Home Conductor...", text: $draft, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
                 .lineLimit(1...5)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(AppStyle.surface.opacity(0.72))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.white.opacity(0.11), lineWidth: 0.7)
+                }
                 .submitLabel(.send)
                 .onSubmit {
                     send(draft)
@@ -258,17 +297,40 @@ struct AssistantView: View {
             Button {
                 send(draft)
             } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppStyle.text)
+                    .frame(width: 42, height: 42)
             }
+            .buttonStyle(GlassButtonStyle(accent: AppStyle.violet, cornerRadius: 8))
             .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSending)
             .accessibilityLabel("Send message")
         }
         .padding()
-        .background(.bar)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color.white.opacity(0.09))
+                .frame(height: 0.7)
+        }
     }
 
     private func send(_ text: String) {
+        if let response = store.executeLocalAssistantCommand(text) {
+            viewModel.sendLocal(text, response: response)
+            draft = ""
+            return
+        }
+
+        if store.preferences.localProcessingOnly {
+            viewModel.sendLocal(
+                text,
+                response: "That request does not match a local command yet. I can report status, run Arrive, Focus, Air care, switch all devices off, or control a device by name."
+            )
+            draft = ""
+            return
+        }
+
         let context = AssistantHomeContext(
             onlineDevices: store.onlineDeviceCount,
             activeDevices: store.activeDeviceCount,
@@ -301,11 +363,26 @@ private struct AssistantBubble: View {
 
             Text(message.content)
                 .font(.body)
-                .foregroundStyle(message.role == .user ? Color.white : Color.primary)
+                .foregroundStyle(AppStyle.text)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
-                .background(message.role == .user ? Color.teal : AppStyle.card)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            message.role == .user
+                                ? AppStyle.violet.opacity(0.34)
+                                : AppStyle.surface.opacity(0.78)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(
+                                    message.role == .user
+                                        ? AppStyle.violet.opacity(0.42)
+                                        : Color.white.opacity(0.10),
+                                    lineWidth: 0.7
+                                )
+                        }
+                }
 
             if message.role == .assistant {
                 Spacer(minLength: 48)

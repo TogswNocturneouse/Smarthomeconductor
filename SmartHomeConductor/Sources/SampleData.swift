@@ -6,7 +6,7 @@ enum SampleData {
             name: "Ceiling light",
             room: "Living",
             kind: .normalLight,
-            manufacturer: "Generic relay",
+            manufacturer: "TP-Link / Tapo",
             protocols: [.matter, .localWifi],
             capabilities: [.power],
             isOnline: true,
@@ -17,13 +17,13 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: nil,
-            note: "Basic on/off lighting endpoint."
+            note: "Tapo local control endpoint."
         ),
         SmartDevice(
             name: "Desk dimmer",
             room: "Studio",
             kind: .dimmerLight,
-            manufacturer: "Shelly style",
+            manufacturer: "Shelly",
             protocols: [.homeKit, .mqtt],
             capabilities: [.power, .brightness],
             isOnline: true,
@@ -34,13 +34,13 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: nil,
-            note: "Brightness control without color."
+            note: "Local HTTP and MQTT dimmer endpoint."
         ),
         SmartDevice(
             name: "Mood strip",
             room: "Living",
             kind: .colorLight,
-            manufacturer: "Hue style",
+            manufacturer: "Xiaomi",
             protocols: [.homeKit, .matter],
             capabilities: [.power, .brightness, .color, .whiteTemperature],
             isOnline: true,
@@ -57,7 +57,7 @@ enum SampleData {
             name: "Climate puck",
             room: "Bedroom",
             kind: .climateSensor,
-            manufacturer: "Aqara style",
+            manufacturer: "Xiaomi / Aqara",
             protocols: [.matter, .bluetooth],
             capabilities: [.temperatureReading, .humidityReading],
             isOnline: true,
@@ -68,7 +68,8 @@ enum SampleData {
             humidity: 48,
             lux: nil,
             airQualityIndex: nil,
-            note: "Temperature and humidity sensor."
+            note: "Temperature and humidity sensor.",
+            batteryLevel: 87
         ),
         SmartDevice(
             name: "Window lux",
@@ -91,7 +92,7 @@ enum SampleData {
             name: "Main bridge",
             room: "Utility",
             kind: .smartHub,
-            manufacturer: "Conductor bridge",
+            manufacturer: "Samsung SmartThings",
             protocols: [.homeKit, .matter, .mqtt, .infrared, .radioFrequency],
             capabilities: [.hubBridge, .localNetwork, .bluetooth],
             isOnline: true,
@@ -102,13 +103,13 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: nil,
-            note: "Planned RF/IR bridge and local device router."
+            note: "Matter, HomeKit, RF and IR routing endpoint."
         ),
         SmartDevice(
             name: "Smart TV",
             room: "Living",
             kind: .smartTV,
-            manufacturer: "SmartHub TV",
+            manufacturer: "Samsung",
             protocols: [.localWifi, .infrared, .vendorCloud],
             capabilities: [.power, .mediaControl, .hubBridge],
             isOnline: true,
@@ -125,7 +126,7 @@ enum SampleData {
             name: "Entry camera",
             room: "Entry",
             kind: .camera,
-            manufacturer: "Wi-Fi camera",
+            manufacturer: "TP-Link / Tapo",
             protocols: [.localWifi, .vendorCloud],
             capabilities: [.cameraStream, .soundTrigger, .localNetwork],
             isOnline: true,
@@ -136,13 +137,13 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: nil,
-            note: "Camera stream placeholder."
+            note: "Secure local preview and event endpoint."
         ),
         SmartDevice(
             name: "Air purifier",
             room: "Bedroom",
             kind: .purifier,
-            manufacturer: "Smart purifier",
+            manufacturer: "Electrolux",
             protocols: [.matter, .localWifi],
             capabilities: [.power, .fanSpeed, .airQuality],
             isOnline: true,
@@ -153,13 +154,15 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: 31,
-            note: "Air cleaning and air-quality feedback."
+            note: "Air cleaning and air-quality feedback.",
+            fanSpeed: 2,
+            mode: "Auto"
         ),
         SmartDevice(
             name: "Wall AC",
             room: "Bedroom",
             kind: .airConditioner,
-            manufacturer: "AC style",
+            manufacturer: "MDV / Midea",
             protocols: [.infrared, .localWifi],
             capabilities: [.power, .coolingMode, .fanSpeed, .temperatureReading],
             isOnline: false,
@@ -170,7 +173,10 @@ enum SampleData {
             humidity: nil,
             lux: nil,
             airQualityIndex: nil,
-            note: "IR/local Wi-Fi control target."
+            note: "IR and local Wi-Fi climate control target.",
+            fanSpeed: 0,
+            targetTemperature: 24,
+            mode: "Cool"
         )
     ]
 
@@ -189,12 +195,12 @@ enum SampleData {
 
     static let frameworks: [FrameworkPlan] = [
         FrameworkPlan(name: "SwiftUI", purpose: "Native iPhone interface and navigation", status: "Active", symbol: "rectangle.stack"),
-        FrameworkPlan(name: "HomeKit", purpose: "Apple Home accessories and rooms", status: "Planned", symbol: "house"),
-        FrameworkPlan(name: "Matter", purpose: "Cross-manufacturer device control", status: "Planned", symbol: "point.3.connected.trianglepath.dotted"),
-        FrameworkPlan(name: "Core ML", purpose: "On-device model execution", status: "Planned", symbol: "brain"),
-        FrameworkPlan(name: "Sound Analysis", purpose: "Audio classifier pipeline", status: "Planned", symbol: "waveform"),
-        FrameworkPlan(name: "Core Bluetooth", purpose: "Hub and sensor discovery", status: "Planned", symbol: "dot.radiowaves.left.and.right"),
-        FrameworkPlan(name: "Network", purpose: "Local bridge, camera, MQTT, WebSocket", status: "Planned", symbol: "network")
+        FrameworkPlan(name: "HomeKit", purpose: "Apple Home accessories and rooms", status: "Adapter", symbol: "house"),
+        FrameworkPlan(name: "Matter", purpose: "Cross-manufacturer device control", status: "Adapter", symbol: "point.3.connected.trianglepath.dotted"),
+        FrameworkPlan(name: "Core ML", purpose: "On-device model execution", status: "Active", symbol: "brain"),
+        FrameworkPlan(name: "Sound Analysis", purpose: "Audio classifier pipeline", status: "Active", symbol: "waveform"),
+        FrameworkPlan(name: "Core Bluetooth", purpose: "Hub and sensor discovery", status: "Available", symbol: "dot.radiowaves.left.and.right"),
+        FrameworkPlan(name: "Network", purpose: "Local bridge, camera, MQTT, WebSocket", status: "Active", symbol: "network")
     ]
 
 
@@ -204,7 +210,7 @@ enum SampleData {
         BrandAdapterPlan(brand: "Xiaomi", ecosystem: "Mi Home / Aqara-style sensors and hubs", stage: .planned, deviceKinds: [.climateSensor, .lightSensor, .smartHub, .purifier, .camera], connectionPlan: "Use Matter/HomeKit path first for supported devices; keep vendor adapter isolated.", nextAction: "Map sensors, purifier readings and hub bridge roles.", symbol: "sensor"),
         BrandAdapterPlan(brand: "Electrolux", ecosystem: "Air and appliance devices", stage: .planned, deviceKinds: [.purifier, .airConditioner], connectionPlan: "Start with air quality, fan, power and climate capabilities.", nextAction: "Build appliance capability matrix before API login work.", symbol: "wind"),
         BrandAdapterPlan(brand: "Samsung", ecosystem: "SmartThings and Smart Hub devices", stage: .scaffolded, deviceKinds: [.smartTV, .smartHub, .camera, .airConditioner, .purifier], connectionPlan: "Use SmartThings as primary integration and IR fallback for TV/AC essentials.", nextAction: "Create SmartThings adapter shape and TV/media control model.", symbol: "tv"),
-        BrandAdapterPlan(brand: "Shelly", ecosystem: "Local relay, dimmer and sensor devices", stage: .ready, deviceKinds: [.normalLight, .dimmerLight, .lightSensor, .smartHub], connectionPlan: "Prioritize local HTTP/MQTT control; no cloud required for core relay use.", nextAction: "Implement local device endpoint model and relay/dimmer commands.", symbol: "switch.2")
+        BrandAdapterPlan(brand: "Shelly", ecosystem: "Local relay, dimmer and sensor devices", stage: .ready, deviceKinds: [.normalLight, .dimmerLight, .lightSensor, .smartHub], connectionPlan: "Prioritize local HTTP/MQTT control; no cloud required for core relay use.", nextAction: "Scan the local network for Shelly endpoints.", symbol: "switch.2", isEnabled: true, discoveredDevices: 2, lastSync: .now)
     ]
 
     static let bridgeCommands: [BridgeCommand] = [
@@ -215,7 +221,7 @@ enum SampleData {
     ]
 
     static let classifierSlots: [ClassifierSlot] = [
-        ClassifierSlot(name: "Sound classifier", modelFile: "MySoundClassifier.mlmodel", input: "Microphone frames, local only", outputs: ["Doorbell", "Fan vibration", "Bark", "Alarm"], nextAction: "Drop compiled model into the app bundle and connect Sound Analysis.")
+        ClassifierSlot(name: "Sound classifier", modelFile: "MySoundClassifier.mlmodel", input: "16 kHz microphone frames, processed locally", outputs: ["0-999", "1000-1999", "2000-2999", "3000-3999", "4000-4999", "6000-6999", "7000-7999", "8000-8999"], nextAction: "Listening is available from the Signals screen.")
     ]
 
 }
