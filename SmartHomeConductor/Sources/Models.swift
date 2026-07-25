@@ -109,7 +109,7 @@ struct FrameworkPlan: Identifiable, Hashable {
     var symbol: String
 }
 
-enum AdapterStage: String, Identifiable {
+enum AdapterStage: String, Identifiable, Hashable {
     case ready = "Ready"
     case scaffolded = "Scaffolded"
     case planned = "Planned"
