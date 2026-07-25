@@ -19,6 +19,11 @@
 		A1000000000000000000000A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* Components.swift */; };
 		A1000000000000000000000C /* IntegrationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* IntegrationsView.swift */; };
 		A1000000000000000000000D /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* AssistantView.swift */; };
+		A1000000000000000000000E /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* AppStore.swift */; };
+		A1000000000000000000000F /* IntegrationCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* IntegrationCore.swift */; };
+		A10000000000000000000010 /* SoundClassifierController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* SoundClassifierController.swift */; };
+		A10000000000000000000011 /* MySoundClassifier.mlmodel in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* MySoundClassifier.mlmodel */; };
+		A10000000000000000000012 /* AppStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* AppStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +51,11 @@
 		A2000000000000000000000A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000D /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000E /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		A2000000000000000000000F /* IntegrationCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationCore.swift; sourceTree = "<group>"; };
+		A20000000000000000000010 /* SoundClassifierController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundClassifierController.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* MySoundClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = MySoundClassifier.mlmodel; sourceTree = "<group>"; };
+		A20000000000000000000012 /* AppStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000B /* SmartHomeConductor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartHomeConductor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -71,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000003 /* SmartHomeConductor */,
+				A40000000000000000000005 /* SmartHomeConductorTests */,
 				A40000000000000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -89,6 +100,7 @@
 			children = (
 				2650680D30143CB400F960CE /* Info.plist */,
 				A40000000000000000000004 /* Sources */,
+				A40000000000000000000006 /* Resources */,
 			);
 			path = SmartHomeConductor;
 			sourceTree = "<group>";
@@ -98,6 +110,9 @@
 			children = (
 				A20000000000000000000001 /* ConductorApp.swift */,
 				A20000000000000000000002 /* Models.swift */,
+				A2000000000000000000000E /* AppStore.swift */,
+				A2000000000000000000000F /* IntegrationCore.swift */,
+				A20000000000000000000010 /* SoundClassifierController.swift */,
 				A20000000000000000000003 /* SampleData.swift */,
 				A20000000000000000000004 /* ContentView.swift */,
 				A20000000000000000000005 /* DashboardView.swift */,
@@ -110,6 +125,22 @@
 				A2000000000000000000000A /* Components.swift */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000005 /* SmartHomeConductorTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000012 /* AppStoreTests.swift */,
+			);
+			path = SmartHomeConductorTests;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000011 /* MySoundClassifier.mlmodel */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -204,6 +235,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000011 /* MySoundClassifier.mlmodel in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -214,6 +246,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000012 /* AppStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +256,9 @@
 			files = (
 				A10000000000000000000001 /* ConductorApp.swift in Sources */,
 				A10000000000000000000002 /* Models.swift in Sources */,
+				A1000000000000000000000E /* AppStore.swift in Sources */,
+				A1000000000000000000000F /* IntegrationCore.swift in Sources */,
+				A10000000000000000000010 /* SoundClassifierController.swift in Sources */,
 				A10000000000000000000003 /* SampleData.swift in Sources */,
 				A10000000000000000000004 /* ContentView.swift in Sources */,
 				A10000000000000000000005 /* DashboardView.swift in Sources */,

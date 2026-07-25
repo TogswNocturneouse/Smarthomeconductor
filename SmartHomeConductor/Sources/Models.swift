@@ -1,7 +1,6 @@
 import Foundation
-import SwiftUI
 
-enum DeviceKind: String, CaseIterable, Identifiable {
+enum DeviceKind: String, CaseIterable, Identifiable, Codable, Sendable {
     case normalLight = "Normal light"
     case dimmerLight = "Dimmer light"
     case colorLight = "Multicolor light"
@@ -18,7 +17,7 @@ enum DeviceKind: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .normalLight: "lightbulb"
-        case .dimmerLight: "slider.horizontal.3"
+        case .dimmerLight: "lightbulb.max"
         case .colorLight: "paintpalette"
         case .climateSensor: "thermometer.medium"
         case .lightSensor: "sun.max"
@@ -31,7 +30,7 @@ enum DeviceKind: String, CaseIterable, Identifiable {
     }
 }
 
-enum DeviceCapability: String, CaseIterable, Identifiable {
+enum DeviceCapability: String, CaseIterable, Identifiable, Codable, Sendable {
     case power = "Power"
     case brightness = "Brightness"
     case color = "Color"
@@ -52,7 +51,7 @@ enum DeviceCapability: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum DeviceProtocol: String, CaseIterable, Identifiable {
+enum DeviceProtocol: String, CaseIterable, Identifiable, Codable, Sendable {
     case homeKit = "HomeKit"
     case matter = "Matter"
     case mqtt = "MQTT"
@@ -65,8 +64,8 @@ enum DeviceProtocol: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-struct SmartDevice: Identifiable, Hashable {
-    let id = UUID()
+struct SmartDevice: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var name: String
     var room: String
     var kind: DeviceKind
@@ -82,43 +81,51 @@ struct SmartDevice: Identifiable, Hashable {
     var lux: Double?
     var airQualityIndex: Int?
     var note: String
+    var fanSpeed: Double? = nil
+    var targetTemperature: Double? = nil
+    var mode: String? = nil
+    var batteryLevel: Int? = nil
+    var lastUpdated: Date = .now
 }
 
-struct SignalEvent: Identifiable, Hashable {
-    let id = UUID()
+struct SignalEvent: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var title: String
     var confidence: Double
     var source: String
     var action: String
     var symbol: String
+    var timestamp: Date = .now
+    var isAcknowledged = false
 }
 
-struct AutomationRule: Identifiable, Hashable {
-    let id = UUID()
+struct AutomationRule: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var title: String
     var condition: String
     var action: String
     var isEnabled: Bool
+    var lastRun: Date? = nil
 }
 
-struct FrameworkPlan: Identifiable, Hashable {
-    let id = UUID()
+struct FrameworkPlan: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var name: String
     var purpose: String
     var status: String
     var symbol: String
 }
 
-enum AdapterStage: String, Identifiable, Hashable {
+enum AdapterStage: String, Identifiable, Hashable, Codable, Sendable {
     case ready = "Ready"
-    case scaffolded = "Scaffolded"
-    case planned = "Planned"
+    case scaffolded = "Available"
+    case planned = "Needs login"
 
     var id: String { rawValue }
 }
 
-struct BrandAdapterPlan: Identifiable, Hashable {
-    let id = UUID()
+struct BrandAdapterPlan: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var brand: String
     var ecosystem: String
     var stage: AdapterStage
@@ -126,19 +133,25 @@ struct BrandAdapterPlan: Identifiable, Hashable {
     var connectionPlan: String
     var nextAction: String
     var symbol: String
+    var isEnabled = false
+    var discoveredDevices = 0
+    var lastSync: Date? = nil
+    var isScanning = false
 }
 
-struct BridgeCommand: Identifiable, Hashable {
-    let id = UUID()
+struct BridgeCommand: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var name: String
     var transport: DeviceProtocol
     var target: String
     var payload: String
     var safetyNote: String
+    var lastRun: Date? = nil
+    var lastResult: String? = nil
 }
 
-struct ClassifierSlot: Identifiable, Hashable {
-    let id = UUID()
+struct ClassifierSlot: Identifiable, Hashable, Codable, Sendable {
+    var id = UUID()
     var name: String
     var modelFile: String
     var input: String
@@ -146,28 +159,63 @@ struct ClassifierSlot: Identifiable, Hashable {
     var nextAction: String
 }
 
-final class AppStore: ObservableObject {
-    @Published var devices: [SmartDevice] = SampleData.devices
-    @Published var signals: [SignalEvent] = SampleData.signals
-    @Published var rules: [AutomationRule] = SampleData.rules
-    @Published var frameworks: [FrameworkPlan] = SampleData.frameworks
-    @Published var brandAdapters: [BrandAdapterPlan] = SampleData.brandAdapters
-    @Published var bridgeCommands: [BridgeCommand] = SampleData.bridgeCommands
-    @Published var classifierSlots: [ClassifierSlot] = SampleData.classifierSlots
+struct AppPreferences: Codable, Equatable, Sendable {
+    var localProcessingOnly = true
+    var hapticsEnabled = true
+    var showOfflineDevices = true
+    var reducedGlow = false
+}
 
-    var onlineDeviceCount: Int {
-        devices.filter(\.isOnline).count
+struct EnvironmentalSummary: Equatable, Sendable {
+    var temperature: Double?
+    var humidity: Double?
+    var illuminance: Double?
+    var airQualityIndex: Int?
+    var onlineSensors: Int
+    var updatedAt: Date?
+
+    var healthLabel: String {
+        guard onlineSensors > 0 else { return "No sensor data" }
+        if let airQualityIndex, airQualityIndex > 100 { return "Air needs attention" }
+        if let humidity, !(35...65).contains(humidity) { return "Humidity needs attention" }
+        if let temperature, !(18...27).contains(temperature) { return "Temperature needs attention" }
+        return "Environment stable"
     }
 
-    var activeDeviceCount: Int {
-        devices.filter(\.isOn).count
+    var isHealthy: Bool {
+        healthLabel == "Environment stable"
+    }
+}
+
+enum ScenePreset: String, CaseIterable, Identifiable, Sendable {
+    case arrive = "Arrive"
+    case focus = "Focus"
+    case airCare = "Air care"
+    case allOff = "All off"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .arrive: "door.left.hand.open"
+        case .focus: "scope"
+        case .airCare: "wind"
+        case .allOff: "power"
+        }
     }
 
-    var rooms: [String] {
-        Array(Set(devices.map(\.room))).sorted()
+    var detail: String {
+        switch self {
+        case .arrive: "Lights and comfort"
+        case .focus: "Studio at 72%"
+        case .airCare: "Purifier and climate"
+        case .allOff: "Power down"
+        }
     }
+}
 
-    func devices(in room: String) -> [SmartDevice] {
-        devices.filter { $0.room == room }
-    }
+struct DiscoveredAccessory: Identifiable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let kind: DeviceKind
 }
