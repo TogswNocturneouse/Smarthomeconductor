@@ -17,8 +17,8 @@
 		A10000000000000000000008 /* LogicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* LogicView.swift */; };
 		A10000000000000000000009 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* SettingsView.swift */; };
 		A1000000000000000000000A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* Components.swift */; };
-		A1000000000000000000000C /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* AssistantView.swift */; };
-		A1000000000000000000000D /* IntegrationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* IntegrationsView.swift */; };
+		A1000000000000000000000C /* IntegrationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* IntegrationsView.swift */; };
+		A1000000000000000000000D /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* AssistantView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,9 +44,9 @@
 		A20000000000000000000008 /* LogicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogicView.swift; sourceTree = "<group>"; };
 		A20000000000000000000009 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		A2000000000000000000000C /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000D /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000B /* SmartHomeConductor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartHomeConductor.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A2000000000000000000000C /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
-		A2000000000000000000000D /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,10 +104,10 @@
 				A20000000000000000000006 /* DevicesView.swift */,
 				A20000000000000000000007 /* SignalsView.swift */,
 				A20000000000000000000008 /* LogicView.swift */,
+				A2000000000000000000000C /* IntegrationsView.swift */,
+				A2000000000000000000000D /* AssistantView.swift */,
 				A20000000000000000000009 /* SettingsView.swift */,
 				A2000000000000000000000A /* Components.swift */,
-				A2000000000000000000000C /* AssistantView.swift */,
-				A2000000000000000000000D /* IntegrationsView.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -229,10 +229,10 @@
 				A10000000000000000000006 /* DevicesView.swift in Sources */,
 				A10000000000000000000007 /* SignalsView.swift in Sources */,
 				A10000000000000000000008 /* LogicView.swift in Sources */,
+				A1000000000000000000000C /* IntegrationsView.swift in Sources */,
+				A1000000000000000000000D /* AssistantView.swift in Sources */,
 				A10000000000000000000009 /* SettingsView.swift in Sources */,
 				A1000000000000000000000A /* Components.swift in Sources */,
-				A1000000000000000000000C /* AssistantView.swift in Sources */,
-				A1000000000000000000000D /* IntegrationsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
