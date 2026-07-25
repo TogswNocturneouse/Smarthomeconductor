@@ -2,8 +2,10 @@ import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
     case home = "Home"
+    case assistant = "Assistant"
     case devices = "Devices"
     case signals = "Signals"
+    case integrations = "Integrations"
     case logic = "Logic"
     case settings = "Settings"
 
@@ -12,8 +14,10 @@ enum AppTab: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .home: "house.fill"
+        case .assistant: "sparkles"
         case .devices: "square.grid.2x2.fill"
         case .signals: "waveform.path.ecg"
+        case .integrations: "antenna.radiowaves.left.and.right"
         case .logic: "point.3.connected.trianglepath.dotted"
         case .settings: "gearshape.fill"
         }
@@ -29,6 +33,10 @@ struct ContentView: View {
                 .tag(AppTab.home)
                 .tabItem { Label(AppTab.home.rawValue, systemImage: AppTab.home.symbol) }
 
+            AssistantView()
+                .tag(AppTab.assistant)
+                .tabItem { Label(AppTab.assistant.rawValue, systemImage: AppTab.assistant.symbol) }
+
             DevicesView()
                 .tag(AppTab.devices)
                 .tabItem { Label(AppTab.devices.rawValue, systemImage: AppTab.devices.symbol) }
@@ -36,6 +44,10 @@ struct ContentView: View {
             SignalsView()
                 .tag(AppTab.signals)
                 .tabItem { Label(AppTab.signals.rawValue, systemImage: AppTab.signals.symbol) }
+
+            IntegrationsView()
+                .tag(AppTab.integrations)
+                .tabItem { Label(AppTab.integrations.rawValue, systemImage: AppTab.integrations.symbol) }
 
             LogicView()
                 .tag(AppTab.logic)

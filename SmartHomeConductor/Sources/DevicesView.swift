@@ -50,6 +50,19 @@ struct DevicesView: View {
 
 struct DeviceDetailView: View {
     let device: SmartDevice
+    @State private var isOn: Bool
+    @State private var brightness: Double
+    @State private var fanSpeed: Double
+    @State private var targetTemperature: Double
+    @State private var selectedColor = "Amber"
+
+    init(device: SmartDevice) {
+        self.device = device
+        _isOn = State(initialValue: device.isOn)
+        _brightness = State(initialValue: device.brightness ?? 50)
+        _fanSpeed = State(initialValue: 2)
+        _targetTemperature = State(initialValue: device.temperature ?? 24)
+    }
 
     var body: some View {
         List {
@@ -99,10 +112,77 @@ struct DeviceDetailView: View {
                 }
             }
 
+            Section("Controls") {
+                DeviceControlPanel(
+                    device: device,
+                    isOn: $isOn,
+                    brightness: $brightness,
+                    fanSpeed: $fanSpeed,
+                    targetTemperature: $targetTemperature,
+                    selectedColor: $selectedColor
+                )
+            }
+
             Section("Implementation note") {
                 Text(device.note)
             }
         }
         .navigationTitle(device.name)
+    }
+}
+
+
+private struct DeviceControlPanel: View {
+    let device: SmartDevice
+    @Binding var isOn: Bool
+    @Binding var brightness: Double
+    @Binding var fanSpeed: Double
+    @Binding var targetTemperature: Double
+    @Binding var selectedColor: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if device.capabilities.contains(.power) {
+                Toggle("Power", isOn: $isOn)
+            }
+
+            if device.capabilities.contains(.brightness) {
+                VStack(alignment: .leading) {
+                    LabeledContent("Brightness", value: "\(Int(brightness))%")
+                    Slider(value: $brightness, in: 0...100)
+                }
+            }
+
+            if device.capabilities.contains(.color) {
+                Picker("Color", selection: $selectedColor) {
+                    ForEach(["Amber", "Blue", "Green", "Rose", "White"], id: \.self) { color in
+                        Text(color).tag(color)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if device.capabilities.contains(.fanSpeed) {
+                VStack(alignment: .leading) {
+                    LabeledContent("Fan speed", value: "\(Int(fanSpeed))")
+                    Slider(value: $fanSpeed, in: 0...5, step: 1)
+                }
+            }
+
+            if device.capabilities.contains(.coolingMode) {
+                Stepper("Target \(Int(targetTemperature)) C", value: $targetTemperature, in: 16...30, step: 1)
+            }
+
+            if device.capabilities.contains(.cameraStream) {
+                Label("Camera stream placeholder ready", systemImage: "video.badge.checkmark")
+                    .foregroundStyle(.teal)
+            }
+
+            if device.capabilities.contains(.hubBridge) {
+                Label("Bridge routing endpoint staged", systemImage: "point.3.connected.trianglepath.dotted")
+                    .foregroundStyle(.teal)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }

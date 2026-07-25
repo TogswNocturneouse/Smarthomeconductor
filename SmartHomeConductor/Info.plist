@@ -4,6 +4,15 @@
 <dict>
 	<key>CFBundleGetInfoString</key>
 	<string></string>
+	<key>AI_GATEWAY_URL</key>
+	<string>http://127.0.0.1:8787/api/chat</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SmartHomeConductor connects to your local Home Conductor AI gateway.</string>
 	<key>Portrait Upside Down.
 Portrait Upside Down.
 Portrait Upside Down</key>
