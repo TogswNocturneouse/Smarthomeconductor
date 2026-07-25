@@ -49,6 +49,23 @@ struct SettingsView: View {
                                 )
                             )
                             .tint(AppStyle.cyan)
+
+                            Rectangle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(height: 0.7)
+
+                            Toggle(
+                                "Restrained visuals",
+                                isOn: Binding(
+                                    get: { store.preferences.reducedGlow },
+                                    set: { value in
+                                        store.updatePreferences {
+                                            $0.reducedGlow = value
+                                        }
+                                    }
+                                )
+                            )
+                            .tint(AppStyle.violet)
                         }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppStyle.text)

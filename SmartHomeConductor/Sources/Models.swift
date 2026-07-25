@@ -165,7 +165,7 @@ struct AppPreferences: Codable, Equatable, Sendable {
     var localProcessingOnly = true
     var hapticsEnabled = true
     var showOfflineDevices = true
-    var reducedGlow = false
+    var reducedGlow = true
 }
 
 struct EnvironmentalSummary: Equatable, Sendable {

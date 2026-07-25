@@ -278,7 +278,7 @@ private struct AppMenuView: View {
     @Binding var selection: AppTab
     @Environment(\.dismiss) private var dismiss
 
-    private let menuTabs: [AppTab] = [.assistant, .integrations, .settings]
+    private let menuTabs: [AppTab] = [.assistant, .signals, .integrations, .settings]
 
     var body: some View {
         ZStack {

@@ -43,10 +43,17 @@ enum AppStyle {
 
 struct AppBackground: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var store: AppStore
+
+    private var isRestrained: Bool {
+        reduceMotion || store.preferences.reducedGlow
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: reduceMotion ? 10 : 1.0 / 24.0)) { timeline in
+        TimelineView(.animation(minimumInterval: reduceMotion ? 10 : (store.preferences.reducedGlow ? 1.0 / 6.0 : 1.0 / 12.0))) { timeline in
             let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+            let veinCount = isRestrained ? 4 : 6
+            let stepCount = isRestrained ? 5 : 7
 
             Canvas { context, size in
                 context.fill(
@@ -54,35 +61,35 @@ struct AppBackground: View {
                     with: .color(AppStyle.canvas)
                 )
 
-                for index in 0..<7 {
-                    let phase = time * 0.025 + Double(index) * 0.82
+                for index in 0..<veinCount {
+                    let phase = time * (isRestrained ? 0.012 : 0.02) + Double(index) * 0.82
                     var vein = Path()
                     vein.move(
                         to: CGPoint(
                             x: -size.width * 0.15,
-                            y: size.height * (0.13 + CGFloat(index) * 0.13)
+                            y: size.height * (0.16 + CGFloat(index) * 0.16)
                         )
                     )
-                    for step in 1...8 {
-                        let progress = CGFloat(step) / 8
+                    for step in 1...stepCount {
+                        let progress = CGFloat(step) / CGFloat(stepCount)
                         let x = size.width * (progress * 1.3 - 0.15)
                         let wave = sin(Double(progress) * 8.0 + phase)
-                        let y = size.height * (0.13 + CGFloat(index) * 0.13)
-                            + CGFloat(wave) * (12 + CGFloat(index % 3) * 5)
+                        let y = size.height * (0.16 + CGFloat(index) * 0.16)
+                            + CGFloat(wave) * (isRestrained ? 8 : 13)
                         vein.addLine(to: CGPoint(x: x, y: y))
                     }
                     context.stroke(
                         vein,
                         with: .color(
                             index.isMultiple(of: 3)
-                                ? AppStyle.moon.opacity(0.075)
-                                : Color.white.opacity(0.035)
+                                ? AppStyle.moon.opacity(isRestrained ? 0.045 : 0.065)
+                                : Color.white.opacity(isRestrained ? 0.022 : 0.033)
                         ),
-                        lineWidth: index.isMultiple(of: 2) ? 1.1 : 0.55
+                        lineWidth: index.isMultiple(of: 2) ? 0.85 : 0.5
                     )
                 }
 
-                let travel = (sin(time * 0.09) + 1) / 2
+                let travel = (sin(time * (isRestrained ? 0.035 : 0.075)) + 1) / 2
                 let centerX = size.width * (0.2 + CGFloat(travel) * 0.6)
                 var light = Path()
                 light.move(to: CGPoint(x: centerX - size.width * 0.5, y: -20))
@@ -93,8 +100,8 @@ struct AppBackground: View {
                 )
                 context.stroke(
                     light,
-                    with: .color(AppStyle.moon.opacity(0.035)),
-                    lineWidth: max(size.width * 0.22, 90)
+                    with: .color(AppStyle.moon.opacity(isRestrained ? 0.018 : 0.03)),
+                    lineWidth: max(size.width * (isRestrained ? 0.14 : 0.18), 70)
                 )
             }
             .ignoresSafeArea()
@@ -141,8 +148,8 @@ struct GlassPanel<Content: View>: View {
                 }
             }
             .shadow(
-                color: accent.opacity(isActive ? 0.10 : (isHovering ? 0.075 : 0)),
-                radius: isActive ? 12 : 9
+                color: accent.opacity(isActive ? 0.075 : (isHovering ? 0.045 : 0)),
+                radius: isActive ? 9 : 6
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onHover { isHovering = $0 }
@@ -198,10 +205,10 @@ private struct GlassButtonBody: View {
             .shadow(
                 color: accent.opacity(
                     configuration.isPressed
-                        ? 0.05
-                        : (emphasized ? 0.11 : 0)
+                        ? 0.035
+                        : (emphasized ? 0.075 : 0)
                 ),
-                radius: configuration.isPressed ? 3 : 12
+                radius: configuration.isPressed ? 2 : 8
             )
             .offset(y: configuration.isPressed ? 1 : 0)
             .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -233,7 +240,7 @@ private func glassBackground(
             shape.stroke(
                 emphasized || pressed
                     ? accent.opacity(pressed ? 0.48 : 0.34)
-                    : Color.white.opacity(0.085),
+                    : Color.white.opacity(0.075),
                 lineWidth: emphasized || pressed ? 1 : 0.65
             )
         }
@@ -241,8 +248,8 @@ private func glassBackground(
             if pressed {
                 shape
                     .inset(by: 2)
-                    .stroke(accent.opacity(0.16), lineWidth: 2)
-                    .blur(radius: 2)
+                    .stroke(accent.opacity(0.11), lineWidth: 1.4)
+                    .blur(radius: 1.2)
             }
         }
 }
@@ -257,9 +264,9 @@ struct StatusDot: View {
             .overlay {
                 Circle()
                     .stroke(color.opacity(0.35), lineWidth: 4)
-                    .blur(radius: 2)
+                    .blur(radius: 1.2)
             }
-            .shadow(color: color.opacity(0.75), radius: 5)
+            .shadow(color: color.opacity(0.46), radius: 3)
             .accessibilityHidden(true)
     }
 }
@@ -552,7 +559,7 @@ struct EnvironmentSummaryBar: View {
                 .fill(Color.white.opacity(0.11))
                 .frame(height: 0.7)
         }
-        .shadow(color: AppStyle.mint.opacity(0.05), radius: 12, y: 5)
+        .shadow(color: AppStyle.mint.opacity(0.03), radius: 8, y: 3)
         .accessibilityElement(children: .contain)
     }
 }

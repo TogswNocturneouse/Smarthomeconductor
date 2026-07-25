@@ -25,15 +25,23 @@ struct LearningView: View {
 
                     GlassPanel(accent: AppStyle.mint) {
                         VStack(alignment: .leading, spacing: 14) {
-                            Picker("Record type", selection: $selectedKind) {
-                                ForEach(LearnedRecordKind.allCases) { kind in
-                                    Label(kind.rawValue, systemImage: kind.symbol)
-                                        .tag(kind)
-                                }
-                            }
-                            .pickerStyle(.segmented)
+                            HStack(spacing: 12) {
+                                Label(selectedKind.rawValue, systemImage: selectedKind.symbol)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AppStyle.text)
 
-                            TextField("Short title", text: $title)
+                                Spacer()
+
+                                Picker("Record type", selection: $selectedKind) {
+                                    ForEach(LearnedRecordKind.allCases) { kind in
+                                        Label(kind.rawValue, systemImage: kind.symbol)
+                                            .tag(kind)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+
+                            TextField("Optional short title", text: $title)
                                 .textFieldStyle(.plain)
                                 .padding(12)
                                 .background(AppStyle.surface.opacity(0.68))
@@ -49,14 +57,17 @@ struct LearningView: View {
                             Button {
                                 addRecord()
                             } label: {
-                                Label("Add memory", systemImage: "plus")
+                                Label("Add \(selectedKind.rawValue.lowercased())", systemImage: "plus")
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(AppStyle.text)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 44)
                             }
                             .buttonStyle(GlassButtonStyle(accent: AppStyle.mint))
-                            .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(
+                                title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                                detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            )
                         }
                     }
 
@@ -91,13 +102,15 @@ struct LearningView: View {
     private func addRecord() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDetail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
+        let sourceText = trimmedTitle.isEmpty ? trimmedDetail : trimmedTitle
+        guard !sourceText.isEmpty else { return }
+        let generatedTitle = sourceText.count > 52 ? "\(sourceText.prefix(49))..." : sourceText
 
         modelContext.insert(
             LearnedRecord(
                 kind: selectedKind,
-                title: trimmedTitle,
-                detail: trimmedDetail.isEmpty ? trimmedTitle : trimmedDetail
+                title: trimmedTitle.isEmpty ? generatedTitle : trimmedTitle,
+                detail: trimmedDetail.isEmpty ? generatedTitle : trimmedDetail
             )
         )
 
@@ -145,6 +158,18 @@ private struct LearnedRecordRow: View {
                     ))
                     .labelsHidden()
                     .tint(AppStyle.mint)
+
+                    Button(role: .destructive) {
+                        modelContext.delete(record)
+                        try? modelContext.save()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppStyle.coral)
+                            .frame(width: 34, height: 34)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Delete \(record.title)")
                 }
 
                 Text(record.detail)
