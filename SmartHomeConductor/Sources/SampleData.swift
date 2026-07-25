@@ -113,11 +113,20 @@ enum SampleData {
 
     static let brandAdapters: [BrandAdapterPlan] = [
         BrandAdapterPlan(
+            brand: "Home Assistant",
+            ecosystem: "Working local bridge for vendor ecosystems and local integrations",
+            stage: .scaffolded,
+            deviceKinds: DeviceKind.allCases,
+            connectionPlan: "Import live entities and send commands through Home Assistant's authenticated local REST API.",
+            nextAction: "Connect the local URL and a long-lived access token.",
+            symbol: "homekit"
+        ),
+        BrandAdapterPlan(
             brand: "Apple Home",
             ecosystem: "HomeKit and Matter accessories shared by Apple Home",
             stage: .ready,
             deviceKinds: DeviceKind.allCases,
-            connectionPlan: "Import accessories and rooms after permission; physical writes still require adapter validation.",
+            connectionPlan: "Import accessories and rooms after permission; physical writes are not claimed until an adapter confirms them.",
             nextAction: "Use Import Apple Home from Add Device.",
             symbol: "house"
         ),
@@ -136,7 +145,7 @@ enum SampleData {
             stage: .scaffolded,
             deviceKinds: [.normalLight, .dimmerLight, .colorLight, .camera, .smartHub, .climateSensor],
             connectionPlan: "Import through Apple Home Matter bridging or an authenticated Home Assistant connection. Direct Tapo account control is not presented as available.",
-            nextAction: "Choose a connection route and run a real endpoint test.",
+            nextAction: "Use Home Assistant for L510, L530, L930, P100, cameras, and live commands.",
             symbol: "lightbulb.led"
         ),
         BrandAdapterPlan(
@@ -175,15 +184,6 @@ enum SampleData {
             nextAction: "Validate the Wellbeing A5 account region and bridge compatibility.",
             symbol: "aqi.medium"
         ),
-        BrandAdapterPlan(
-            brand: "Home Assistant",
-            ecosystem: "Optional bridge for vendor ecosystems and local integrations",
-            stage: .scaffolded,
-            deviceKinds: DeviceKind.allCases,
-            connectionPlan: "Import live entities and send commands through Home Assistant's authenticated local REST API.",
-            nextAction: "Connect the local URL and a long-lived access token.",
-            symbol: "homekit"
-        )
     ]
 
     static let classifierSlots: [ClassifierSlot] = [

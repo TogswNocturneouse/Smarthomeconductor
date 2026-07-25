@@ -17,6 +17,10 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     SystemStatusBand()
 
+                    if store.onlineDeviceCount == 0 {
+                        ConnectionStartPanel()
+                    }
+
                     if store.onlineDeviceCount > 0 {
                         SectionHeader(
                             title: "Scenes",
@@ -113,6 +117,56 @@ struct DashboardView: View {
             }
             .background(Color.clear)
             .navigationTitle("Home")
+        }
+    }
+}
+
+private struct ConnectionStartPanel: View {
+    @EnvironmentObject private var navigation: AppNavigation
+
+    var body: some View {
+        GlassPanel(accent: AppStyle.moon, padding: 15) {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "link.badge.plus")
+                        .font(.title3)
+                        .foregroundStyle(AppStyle.moon)
+                        .frame(width: 40, height: 40)
+                        .background(AppStyle.moon.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Connect the first real route")
+                            .font(.headline)
+                            .foregroundStyle(AppStyle.text)
+                        Text("Home Assistant is the working control path now. Apple Home and nearby discovery are import paths until writable adapters are registered.")
+                            .font(.subheadline)
+                            .foregroundStyle(AppStyle.secondaryText)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Button {
+                        navigation.selection = .integrations
+                    } label: {
+                        Label("Home Assistant", systemImage: "homekit")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.mint))
+
+                    Button {
+                        navigation.selection = .devices
+                    } label: {
+                        Label("Add device", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.moon))
+                }
+            }
         }
     }
 }

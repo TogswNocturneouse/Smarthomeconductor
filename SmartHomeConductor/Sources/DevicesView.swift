@@ -371,14 +371,18 @@ struct DeviceDetailView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     DeviceIdentityPanel(device: device)
 
-                    if hasControls(device) {
+                    if hasControls(device), commandControlsAreAvailable(device) {
                         SectionHeader(
                             title: "Controls",
-                            subtitle: device.isOnline ? "Commands are available" : "Endpoint is offline"
+                            subtitle: "Commands are sent through a confirmed transport"
                         )
                         DeviceControlPanel(device: device)
-                            .disabled(!device.isOnline)
-                            .opacity(device.isOnline ? 1 : 0.48)
+                    } else if hasControls(device) {
+                        SectionHeader(
+                            title: "Controls",
+                            subtitle: "Connect a writable route first"
+                        )
+                        DeviceConnectionRequiredPanel(device: device)
                     }
 
                     if hasReadings(device) {
@@ -451,7 +455,13 @@ struct DeviceDetailView: View {
         device.humidity != nil ||
         device.lux != nil ||
         device.airQualityIndex != nil ||
-        device.batteryLevel != nil
+            device.batteryLevel != nil
+    }
+
+    private func commandControlsAreAvailable(_ device: SmartDevice) -> Bool {
+        device.isOnline &&
+            device.integrationID == HomeAssistantController.integrationID &&
+            device.externalID != nil
     }
 }
 
@@ -643,6 +653,77 @@ private struct DeviceControlPanel: View {
                     Label(message, systemImage: "checkmark.circle")
                         .font(.caption)
                         .foregroundStyle(AppStyle.secondaryText)
+                }
+            }
+        }
+    }
+}
+
+private struct DeviceConnectionRequiredPanel: View {
+    let device: SmartDevice
+    @EnvironmentObject private var navigation: AppNavigation
+
+    private var recommendation: String {
+        switch device.manufacturer.lowercased() {
+        case let brand where brand.contains("tapo") || brand.contains("tp-link"):
+            "Use Home Assistant for L510, L530, L930 and P100 command control. Use the H100 Matter bridge for T310, and RTSP/ONVIF credentials for C220 or TC71 cameras."
+        case let brand where brand.contains("samsung"):
+            "Use SmartThings OAuth for TV and hub control when the production callback service is ready. Home Assistant can be used now as the bridge route."
+        case let brand where brand.contains("xiaomi"):
+            "Use Matter when exposed, or connect Xiaomi through a Home Assistant MiOT route."
+        case let brand where brand.contains("midea") || brand.contains("mdv"):
+            "Use a Midea-compatible bridge for network control. The planned IR extension is the fallback for split AC commands."
+        case let brand where brand.contains("electrolux"):
+            "Use a supported Home Assistant or account bridge until Electrolux provides a production consumer API route."
+        default:
+            "Import this endpoint through Home Assistant, Apple Home, Matter, or a registered local adapter before sending commands."
+        }
+    }
+
+    var body: some View {
+        GlassPanel(accent: AppStyle.moon) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 11) {
+                    Image(systemName: "lock.shield")
+                        .font(.title3)
+                        .foregroundStyle(AppStyle.moon)
+                        .frame(width: 38, height: 38)
+                        .background(AppStyle.moon.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("No physical command route")
+                            .font(.headline)
+                            .foregroundStyle(AppStyle.text)
+                        Text("This record will not fake device control.")
+                            .font(.caption)
+                            .foregroundStyle(AppStyle.secondaryText)
+                    }
+                }
+
+                Text(recommendation)
+                    .font(.subheadline)
+                    .foregroundStyle(AppStyle.secondaryText)
+
+                HStack(spacing: 10) {
+                    Button {
+                        navigation.selection = .integrations
+                    } label: {
+                        Label("Connect route", systemImage: "link")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.moon))
+
+                    Button {
+                        navigation.selection = .assistant
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.silver))
+                    .accessibilityLabel("Ask assistant")
                 }
             }
         }

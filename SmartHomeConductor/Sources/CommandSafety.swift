@@ -167,11 +167,11 @@ struct SceneExecutionReport: Equatable, Sendable {
             return "\(scene.rawValue) was not run because no compatible devices are connected."
         }
         if updatedDevices == 0, blockedDevices > 0 {
-            return "\(scene.rawValue) needs confirmation for \(blockedDevices) connected endpoint\(blockedDevices == 1 ? "" : "s"). No device state was changed."
+            return "\(scene.rawValue) could not reach \(blockedDevices) connected endpoint\(blockedDevices == 1 ? "" : "s"). No device state was changed."
         }
         if blockedDevices > 0 {
-            return "\(scene.rawValue) updated \(updatedDevices) endpoint\(updatedDevices == 1 ? "" : "s") locally and blocked \(blockedDevices) pending confirmation."
+            return "\(scene.rawValue) confirmed \(updatedDevices) endpoint\(updatedDevices == 1 ? "" : "s") and blocked \(blockedDevices)."
         }
-        return "\(scene.rawValue) updated local state for \(updatedDevices) connected endpoint\(updatedDevices == 1 ? "" : "s"). Adapter confirmation remains required."
+        return "\(scene.rawValue) confirmed \(updatedDevices) connected endpoint\(updatedDevices == 1 ? "" : "s")."
     }
 }

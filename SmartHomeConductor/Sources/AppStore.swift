@@ -110,6 +110,15 @@ final class AppStore: ObservableObject {
                 refreshedConnectionCopy = true
             }
         }
+        let orderedBrands = SampleData.brandAdapters.map(\.brand)
+        brandAdapters.sort {
+            let left = orderedBrands.firstIndex(of: $0.brand) ?? Int.max
+            let right = orderedBrands.firstIndex(of: $1.brand) ?? Int.max
+            if left != right {
+                return left < right
+            }
+            return $0.brand.localizedStandardCompare($1.brand) == .orderedAscending
+        }
 
         if persistence != nil,
             loadedSnapshot == nil || !missingAdapters.isEmpty || refreshedConnectionCopy
@@ -355,6 +364,20 @@ final class AppStore: ObservableObject {
             break
         }
 
+        guard hasExecutableTransport(device) else {
+            let message = "\(device.name) has no authenticated command route yet. Connect Home Assistant or another writable adapter before sending physical commands."
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .transportUnavailable,
+                detail: message
+            )
+            lastCommandMessage = message
+            return CommandExecutionResult(outcome: .transportUnavailable, message: message)
+        }
+
         updateDevice(id, persistAfterUpdate: false) {
             apply(command, to: &$0)
         }
@@ -552,7 +575,7 @@ final class AppStore: ObservableObject {
             }
             return (device, command)
         }
-        var allowedCommands: [UUID: DeviceCommand] = [:]
+        var blockedCount = 0
 
         for (device, command) in planned {
             let risk = commandPolicy.risk(for: command, device: device)
@@ -565,8 +588,19 @@ final class AppStore: ObservableObject {
             )
             switch decision {
             case .allow:
-                allowedCommands[device.id] = command
+                let detail = "\(scene.rawValue) requires a scene-capable transport. Use the individual device control until scene execution is registered for this adapter."
+                blockedCount += 1
+                recordCommandAudit(
+                    device: device,
+                    command: "Run \(scene.rawValue) scene: \(command.summary)",
+                    origin: origin,
+                    risk: risk,
+                    outcome: .transportUnavailable,
+                    detail: detail,
+                    persistAfterInsert: false
+                )
             case let .deny(reason):
+                blockedCount += 1
                 recordCommandAudit(
                     device: device,
                     command: "Run \(scene.rawValue) scene: \(command.summary)",
@@ -577,6 +611,7 @@ final class AppStore: ObservableObject {
                     persistAfterInsert: false
                 )
             case let .requireConfirmation(reason):
+                blockedCount += 1
                 recordCommandAudit(
                     device: device,
                     command: "Run \(scene.rawValue) scene: \(command.summary)",
@@ -589,32 +624,12 @@ final class AppStore: ObservableObject {
             }
         }
 
-        mutateDevices { device in
-            guard let command = allowedCommands[device.id] else { return }
-            apply(command, to: &device)
-        }
-
         let report = SceneExecutionReport(
             scene: scene,
             eligibleDevices: planned.count,
-            updatedDevices: allowedCommands.count,
-            blockedDevices: planned.count - allowedCommands.count
+            updatedDevices: 0,
+            blockedDevices: blockedCount
         )
-        if !allowedCommands.isEmpty {
-            activeScene = scene
-            for id in allowedCommands.keys {
-                guard let device = device(id: id) else { continue }
-                recordCommandAudit(
-                    device: device,
-                    command: "Run \(scene.rawValue) scene",
-                    origin: .userInterface,
-                    risk: commandPolicy.risk(for: .setPower(device.isOn), device: device),
-                    outcome: .localStateUpdated,
-                    detail: report.message,
-                    persistAfterInsert: false
-                )
-            }
-        }
         recordEvent(
             title: "\(scene.rawValue) scene",
             confidence: 1,
@@ -921,6 +936,10 @@ final class AppStore: ObservableObject {
         for index in devices.indices {
             update(&devices[index])
         }
+    }
+
+    private func hasExecutableTransport(_ device: SmartDevice) -> Bool {
+        device.integrationID == HomeAssistantController.integrationID
     }
 
     private func recordEvent(

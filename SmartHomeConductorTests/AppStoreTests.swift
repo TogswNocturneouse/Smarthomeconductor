@@ -87,7 +87,7 @@ final class AppStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testConfirmedAssistantLightControlCreatesAudit() throws {
+    func testConfirmedAssistantLightControlWithoutTransportIsBlocked() throws {
         let store = makeStore()
         let device = onlineLight()
         store.addDevice(device)
@@ -99,10 +99,10 @@ final class AppStoreTests: XCTestCase {
             confirmed: true
         )
 
-        XCTAssertEqual(result.outcome, .localStateUpdated)
-        XCTAssertTrue(try XCTUnwrap(store.device(id: device.id)).isOn)
+        XCTAssertEqual(result.outcome, .transportUnavailable)
+        XCTAssertFalse(try XCTUnwrap(store.device(id: device.id)).isOn)
         XCTAssertEqual(store.commandAudits.first?.origin, .assistant)
-        XCTAssertEqual(store.commandAudits.first?.outcome, .localStateUpdated)
+        XCTAssertEqual(store.commandAudits.first?.outcome, .transportUnavailable)
     }
 
     @MainActor
@@ -139,6 +139,21 @@ final class AppStoreTests: XCTestCase {
             previousUpdate
         )
         XCTAssertEqual(store.commandAudits.first?.outcome, .confirmationRequired)
+    }
+
+    @MainActor
+    func testUserSceneDoesNotFakeStateWithoutSceneTransport() throws {
+        let store = makeStore()
+        let light = onlineLight()
+        store.addDevice(light)
+
+        let report = store.runScene(.arrive)
+
+        XCTAssertEqual(report.eligibleDevices, 1)
+        XCTAssertEqual(report.updatedDevices, 0)
+        XCTAssertEqual(report.blockedDevices, 1)
+        XCTAssertFalse(try XCTUnwrap(store.device(id: light.id)).isOn)
+        XCTAssertEqual(store.commandAudits.first?.outcome, .transportUnavailable)
     }
 
     @MainActor

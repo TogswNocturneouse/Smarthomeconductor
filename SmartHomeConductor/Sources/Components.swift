@@ -1,18 +1,18 @@
 import SwiftUI
 
 enum AppStyle {
-    static let canvas = Color(red: 0.012, green: 0.014, blue: 0.018)
-    static let surface = Color(red: 0.045, green: 0.050, blue: 0.062)
-    static let surfaceRaised = Color(red: 0.075, green: 0.082, blue: 0.098)
-    static let text = Color(red: 0.93, green: 0.94, blue: 0.96)
-    static let secondaryText = Color(red: 0.57, green: 0.59, blue: 0.64)
-    static let moon = Color(red: 0.56, green: 0.69, blue: 0.91)
-    static let silver = Color(red: 0.76, green: 0.79, blue: 0.84)
-    static let mint = Color(red: 0.43, green: 0.74, blue: 0.66)
+    static let canvas = Color(red: 0.006, green: 0.007, blue: 0.010)
+    static let surface = Color(red: 0.028, green: 0.031, blue: 0.038)
+    static let surfaceRaised = Color(red: 0.054, green: 0.057, blue: 0.068)
+    static let text = Color(red: 0.91, green: 0.92, blue: 0.94)
+    static let secondaryText = Color(red: 0.55, green: 0.57, blue: 0.61)
+    static let moon = Color(red: 0.60, green: 0.69, blue: 0.80)
+    static let silver = Color(red: 0.74, green: 0.76, blue: 0.80)
+    static let mint = Color(red: 0.48, green: 0.70, blue: 0.65)
     static let cyan = moon
-    static let amber = Color(red: 0.78, green: 0.67, blue: 0.45)
-    static let coral = Color(red: 0.74, green: 0.39, blue: 0.43)
-    static let violet = Color(red: 0.59, green: 0.55, blue: 0.76)
+    static let amber = Color(red: 0.72, green: 0.63, blue: 0.46)
+    static let coral = Color(red: 0.70, green: 0.43, blue: 0.45)
+    static let violet = Color(red: 0.56, green: 0.55, blue: 0.68)
 
     static func accent(for kind: DeviceKind) -> Color {
         switch kind {
@@ -62,35 +62,35 @@ struct AppBackground: View {
                 )
 
                 for index in 0..<veinCount {
-                    let phase = time * (isRestrained ? 0.012 : 0.02) + Double(index) * 0.82
+                    let phase = time * (isRestrained ? 0.008 : 0.014) + Double(index) * 0.82
                     var vein = Path()
                     vein.move(
                         to: CGPoint(
-                            x: -size.width * 0.15,
-                            y: size.height * (0.16 + CGFloat(index) * 0.16)
+                            x: -size.width * 0.20,
+                            y: size.height * (0.12 + CGFloat(index) * 0.17)
                         )
                     )
                     for step in 1...stepCount {
                         let progress = CGFloat(step) / CGFloat(stepCount)
-                        let x = size.width * (progress * 1.3 - 0.15)
-                        let wave = sin(Double(progress) * 8.0 + phase)
-                        let y = size.height * (0.16 + CGFloat(index) * 0.16)
-                            + CGFloat(wave) * (isRestrained ? 8 : 13)
+                        let x = size.width * (progress * 1.35 - 0.20)
+                        let wave = sin(Double(progress) * 7.4 + phase)
+                        let y = size.height * (0.12 + CGFloat(index) * 0.17)
+                            + CGFloat(wave) * (isRestrained ? 6 : 10)
                         vein.addLine(to: CGPoint(x: x, y: y))
                     }
                     context.stroke(
                         vein,
                         with: .color(
                             index.isMultiple(of: 3)
-                                ? AppStyle.moon.opacity(isRestrained ? 0.045 : 0.065)
-                                : Color.white.opacity(isRestrained ? 0.022 : 0.033)
+                                ? AppStyle.moon.opacity(isRestrained ? 0.028 : 0.044)
+                                : Color.white.opacity(isRestrained ? 0.014 : 0.023)
                         ),
-                        lineWidth: index.isMultiple(of: 2) ? 0.85 : 0.5
+                        lineWidth: index.isMultiple(of: 2) ? 0.7 : 0.45
                     )
                 }
 
-                let travel = (sin(time * (isRestrained ? 0.035 : 0.075)) + 1) / 2
-                let centerX = size.width * (0.2 + CGFloat(travel) * 0.6)
+                let travel = (sin(time * (isRestrained ? 0.026 : 0.048)) + 1) / 2
+                let centerX = size.width * (0.18 + CGFloat(travel) * 0.64)
                 var light = Path()
                 light.move(to: CGPoint(x: centerX - size.width * 0.5, y: -20))
                 light.addCurve(
@@ -100,8 +100,8 @@ struct AppBackground: View {
                 )
                 context.stroke(
                     light,
-                    with: .color(AppStyle.moon.opacity(isRestrained ? 0.018 : 0.03)),
-                    lineWidth: max(size.width * (isRestrained ? 0.14 : 0.18), 70)
+                    with: .color(AppStyle.moon.opacity(isRestrained ? 0.011 : 0.019)),
+                    lineWidth: max(size.width * (isRestrained ? 0.10 : 0.14), 54)
                 )
             }
             .ignoresSafeArea()
@@ -148,8 +148,8 @@ struct GlassPanel<Content: View>: View {
                 }
             }
             .shadow(
-                color: accent.opacity(isActive ? 0.075 : (isHovering ? 0.045 : 0)),
-                radius: isActive ? 9 : 6
+                color: accent.opacity(isActive ? 0.050 : (isHovering ? 0.032 : 0)),
+                radius: isActive ? 8 : 5
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onHover { isHovering = $0 }
@@ -205,10 +205,10 @@ private struct GlassButtonBody: View {
             .shadow(
                 color: accent.opacity(
                     configuration.isPressed
-                        ? 0.035
-                        : (emphasized ? 0.075 : 0)
+                        ? 0.025
+                        : (emphasized ? 0.055 : 0)
                 ),
-                radius: configuration.isPressed ? 2 : 8
+                radius: configuration.isPressed ? 2 : 7
             )
             .offset(y: configuration.isPressed ? 1 : 0)
             .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -232,15 +232,15 @@ private func glassBackground(
         .overlay {
             shape.fill(
                 pressed
-                    ? AppStyle.surfaceRaised.opacity(0.82)
-                    : AppStyle.surface.opacity(0.76)
+                    ? AppStyle.surfaceRaised.opacity(0.88)
+                    : AppStyle.surface.opacity(0.84)
             )
         }
         .overlay {
             shape.stroke(
                 emphasized || pressed
-                    ? accent.opacity(pressed ? 0.48 : 0.34)
-                    : Color.white.opacity(0.075),
+                    ? accent.opacity(pressed ? 0.38 : 0.24)
+                    : Color.white.opacity(0.060),
                 lineWidth: emphasized || pressed ? 1 : 0.65
             )
         }
@@ -248,7 +248,7 @@ private func glassBackground(
             if pressed {
                 shape
                     .inset(by: 2)
-                    .stroke(accent.opacity(0.11), lineWidth: 1.4)
+                    .stroke(accent.opacity(0.08), lineWidth: 1.2)
                     .blur(radius: 1.2)
             }
         }
@@ -263,10 +263,10 @@ struct StatusDot: View {
             .frame(width: 7, height: 7)
             .overlay {
                 Circle()
-                    .stroke(color.opacity(0.35), lineWidth: 4)
+                    .stroke(color.opacity(0.25), lineWidth: 4)
                     .blur(radius: 1.2)
             }
-            .shadow(color: color.opacity(0.46), radius: 3)
+            .shadow(color: color.opacity(0.34), radius: 3)
             .accessibilityHidden(true)
     }
 }
@@ -552,14 +552,14 @@ struct EnvironmentSummaryBar: View {
         .background {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(AppStyle.surface.opacity(0.82))
+                .overlay(AppStyle.surface.opacity(0.90))
         }
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color.white.opacity(0.11))
+                .fill(Color.white.opacity(0.075))
                 .frame(height: 0.7)
         }
-        .shadow(color: AppStyle.mint.opacity(0.03), radius: 8, y: 3)
+        .shadow(color: AppStyle.moon.opacity(0.025), radius: 8, y: 3)
         .accessibilityElement(children: .contain)
     }
 }

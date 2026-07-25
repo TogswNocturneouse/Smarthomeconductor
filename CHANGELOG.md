@@ -2,6 +2,21 @@
 
 All notable changes to SmartHomeConductor are documented here.
 
+## 0.3.2 - 2026-07-25
+
+### Changed
+
+- Reworked the visual system into a calmer black-marble moonlight style with lower glow, tighter borders, and quieter ambient movement.
+- Put Home Assistant first in the integration registry because it is the current working command route.
+- Show a direct first-connection panel on the dashboard when no live devices are connected.
+- Replace disabled-looking controls on unconnected inventory devices with specific connection guidance.
+
+### Fixed
+
+- Stop authenticated-looking manual or imported devices from faking local state changes when no writable transport exists.
+- Prevent Apple Home imports from being marked online until a writable adapter can confirm commands.
+- Stop scenes from mutating local device state without a scene-capable transport.
+
 ## 0.3.1 - 2026-07-25
 
 ### Added

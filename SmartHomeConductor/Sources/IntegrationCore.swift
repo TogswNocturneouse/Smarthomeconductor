@@ -114,7 +114,7 @@ struct DiscoveryCandidate: Identifiable, Hashable, Sendable {
             manufacturer: manufacturer,
             protocols: protocols,
             capabilities: capabilities,
-            isOnline: source == .appleHome && isReachable,
+            isOnline: false,
             isOn: false,
             brightness: capabilities.contains(.brightness) ? 0 : nil,
             colorName: capabilities.contains(.color) ? "White" : nil,
@@ -123,7 +123,7 @@ struct DiscoveryCandidate: Identifiable, Hashable, Sendable {
             lux: nil,
             airQualityIndex: nil,
             note: source == .appleHome
-                ? "Imported from Apple Home."
+                ? "Imported from Apple Home. Command control is enabled after a writable adapter is registered."
                 : "Discovered nearby. Authentication or commissioning is still required.",
             fanSpeed: capabilities.contains(.fanSpeed) ? 0 : nil,
             targetTemperature: kind == .airConditioner ? 24 : nil,
