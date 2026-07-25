@@ -13,12 +13,12 @@ final class AppStore: ObservableObject {
     @Published private(set) var activeScene: ScenePreset?
 
     private let defaults: UserDefaults
-    private let storageKey = "conductor.demo.state.v2"
+    private let storageKey = "conductor.user.home.v3"
     private let registry: AdapterRegistry
 
     init(
         defaults: UserDefaults = .standard,
-        registry: AdapterRegistry = .preview
+        registry: AdapterRegistry = .live
     ) {
         self.defaults = defaults
         self.registry = registry
@@ -90,6 +90,58 @@ final class AppStore: ObservableObject {
         devices.filter { $0.room == room }
     }
 
+    func addDevice(_ device: SmartDevice) {
+        guard !devices.contains(where: {
+            $0.name.localizedCaseInsensitiveCompare(device.name) == .orderedSame &&
+            $0.manufacturer.localizedCaseInsensitiveCompare(device.manufacturer) == .orderedSame
+        }) else {
+            return
+        }
+        devices.append(device)
+        devices.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        persist()
+    }
+
+    func addDevice(
+        name: String,
+        room: String,
+        kind: DeviceKind,
+        manufacturer: String
+    ) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRoom = room.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedManufacturer = manufacturer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, !trimmedManufacturer.isEmpty else { return }
+
+        addDevice(
+            SmartDevice(
+                name: trimmedName,
+                room: trimmedRoom.isEmpty ? "Unassigned" : trimmedRoom,
+                kind: kind,
+                manufacturer: trimmedManufacturer,
+                protocols: [],
+                capabilities: defaultCapabilities(for: kind),
+                isOnline: false,
+                isOn: false,
+                brightness: [.dimmerLight, .colorLight].contains(kind) ? 0 : nil,
+                colorName: kind == .colorLight ? "White" : nil,
+                temperature: nil,
+                humidity: nil,
+                lux: nil,
+                airQualityIndex: nil,
+                note: "Manually added inventory record. Connect a compatible route to enable control.",
+                fanSpeed: [.purifier, .airConditioner].contains(kind) ? 0 : nil,
+                targetTemperature: kind == .airConditioner ? 24 : nil,
+                mode: [.purifier, .airConditioner].contains(kind) ? "Auto" : nil
+            )
+        )
+    }
+
+    func deleteDevice(_ id: UUID) {
+        devices.removeAll { $0.id == id }
+        persist()
+    }
+
     func setPower(_ isOn: Bool, for id: UUID) {
         updateDevice(id) {
             $0.isOn = isOn
@@ -142,7 +194,7 @@ final class AppStore: ObservableObject {
     }
 
     func performDeviceAction(_ action: String, for id: UUID) {
-        guard let device = device(id: id) else { return }
+        guard let device = device(id: id), device.isOnline else { return }
         recordEvent(
             title: "\(device.name): \(action)",
             confidence: 1,
@@ -269,15 +321,15 @@ final class AppStore: ObservableObject {
             let accessories = await registry.discover(brand: brand)
             guard let currentIndex = brandAdapters.firstIndex(where: { $0.id == adapterID }) else { return }
             brandAdapters[currentIndex].isScanning = false
-            brandAdapters[currentIndex].isEnabled = true
-            brandAdapters[currentIndex].stage = .ready
             brandAdapters[currentIndex].discoveredDevices = accessories.count
             brandAdapters[currentIndex].lastSync = .now
             recordEvent(
                 title: "\(brand) discovery",
                 confidence: 1,
                 source: "Adapter registry",
-                action: "\(accessories.count) endpoints available",
+                action: accessories.isEmpty
+                    ? "No authenticated endpoints found"
+                    : "\(accessories.count) endpoints available",
                 symbol: "antenna.radiowaves.left.and.right"
             )
             persist()
@@ -353,12 +405,12 @@ final class AppStore: ObservableObject {
         persist()
     }
 
-    func resetDemo() {
-        devices = SampleData.devices
-        signals = SampleData.signals
-        rules = SampleData.rules
+    func clearHome() {
+        devices = []
+        signals = []
+        rules = []
         brandAdapters = SampleData.brandAdapters
-        bridgeCommands = SampleData.bridgeCommands
+        bridgeCommands = []
         preferences = AppPreferences()
         activeScene = nil
         persist()
@@ -395,6 +447,9 @@ final class AppStore: ObservableObject {
 
         for device in devices {
             guard command.contains(device.name.lowercased()) else { continue }
+            guard device.isOnline else {
+                return "\(device.name) is in your inventory but is not connected. Open Devices, select it, and add a compatible local or account route."
+            }
             if command.contains("turn on") || command.hasSuffix(" on") {
                 setPower(true, for: device.id)
                 return "\(device.name) is on."
@@ -405,6 +460,35 @@ final class AppStore: ObservableObject {
             }
         }
 
+        return nil
+    }
+
+    func connectionAdvice(for query: String) -> String? {
+        let text = query.lowercased()
+        if text.contains("discover") || text.contains("find device") || text.contains("scan") {
+            return "Open Devices and tap Add. Wi-Fi discovery uses Bonjour on your local network, Bluetooth discovery scans nearby advertisements, and Apple Home import reads accessories you already authorized in Home."
+        }
+        if text.contains("tapo") || text.contains("tp-link") {
+            return "Tapo lights, plugs, cameras, H100, and T310 can often be reached locally after setup in the Tapo app. Some firmware requires Third-Party Compatibility, and cameras need separate camera-account credentials for streams."
+        }
+        if text.contains("xiaomi") || text.contains("purifier 4") {
+            return "Keep the Xiaomi Air Purifier 4 Compact provisioned in Xiaomi Home. Use Matter if the hardware exposes it; otherwise import through a user-owned Home Assistant bridge or a supported MiOT adapter."
+        }
+        if text.contains("electrolux") || text.contains("wellbeing") {
+            return "Keep the Wellbeing A5 configured in the Electrolux app. Direct import needs an authorized vendor API; until that exists, use a Home Assistant bridge and keep the account credential outside this app."
+        }
+        if text.contains("midea") || text.contains("mdv") || text.contains("air conditioner") {
+            return "Identify the MDV Wi-Fi module first. Use Matter if exposed, otherwise connect through a compatible Midea bridge. The planned IR extension remains a fallback for power, mode, fan, and target temperature."
+        }
+        if text.contains("samsung") || text.contains("smartthings") || text.contains("tv") {
+            return "Samsung import should use SmartThings OAuth. It can provide authorized device lists, state, health, and commands; production linking needs a registered SmartThings API app and secure callback service."
+        }
+        if text.contains("matter") {
+            return "Matter devices must be commissioned before control. Use the system Matter setup flow, then map exposed clusters such as On/Off, Level Control, color, temperature, and air quality."
+        }
+        if text.contains("homekit") || text.contains("apple home") {
+            return "Apple Home is the fastest supported import route. Grant Home access, then Conductor can read the shared HomeKit database and add accessories with their existing rooms."
+        }
         return nil
     }
 
@@ -458,6 +542,22 @@ final class AppStore: ObservableObject {
     private func average(_ values: [Double]) -> Double? {
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
+    }
+
+    private func defaultCapabilities(for kind: DeviceKind) -> [DeviceCapability] {
+        switch kind {
+        case .normalLight: [.power]
+        case .smartPlug: [.power, .localNetwork]
+        case .dimmerLight: [.power, .brightness]
+        case .colorLight: [.power, .brightness, .color, .whiteTemperature]
+        case .climateSensor: [.temperatureReading, .humidityReading]
+        case .lightSensor: [.lightReading]
+        case .smartHub: [.hubBridge, .localNetwork]
+        case .smartTV: [.power, .mediaControl, .hubBridge]
+        case .camera: [.cameraStream, .localNetwork]
+        case .purifier: [.power, .fanSpeed, .airQuality]
+        case .airConditioner: [.power, .fanSpeed, .coolingMode, .temperatureReading]
+        }
     }
 }
 

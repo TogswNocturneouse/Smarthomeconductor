@@ -7,6 +7,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
     case signals = "Signals"
     case integrations = "Integrations"
     case logic = "Automations"
+    case teach = "Teach"
     case settings = "Settings"
 
     var id: String { rawValue }
@@ -19,6 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
         case .signals: "waveform.path.ecg"
         case .integrations: "antenna.radiowaves.left.and.right"
         case .logic: "point.3.connected.trianglepath.dotted"
+        case .teach: "brain.head.profile"
         case .settings: "gearshape.fill"
         }
     }
@@ -29,6 +31,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
         case .assistant, .integrations: AppStyle.violet
         case .signals: AppStyle.coral
         case .logic: AppStyle.cyan
+        case .teach: AppStyle.mint
         case .settings: AppStyle.amber
         }
     }
@@ -101,6 +104,8 @@ private struct DestinationView: View {
             IntegrationsView()
         case .logic:
             LogicView()
+        case .teach:
+            LearningView()
         case .settings:
             SettingsView()
         }
@@ -165,7 +170,11 @@ private struct Sidebar: View {
                     Text("\(store.onlineDeviceCount) endpoints")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppStyle.text)
-                    Text("Local bridge online")
+                    Text(
+                        store.onlineDeviceCount > 0
+                            ? "Local routes active"
+                            : "Connections pending"
+                    )
                         .font(.caption2)
                         .foregroundStyle(AppStyle.secondaryText)
                 }
@@ -186,10 +195,10 @@ private struct CompactTabBar: View {
     @Binding var selection: AppTab
     @Binding var isMenuPresented: Bool
 
-    private let tabs: [AppTab] = [.home, .devices, .logic, .signals]
+    private let tabs: [AppTab] = [.home, .devices, .logic, .teach]
 
     private var menuIsActive: Bool {
-        [.assistant, .integrations, .settings].contains(selection)
+        [.assistant, .signals, .integrations, .settings].contains(selection)
     }
 
     var body: some View {
@@ -319,5 +328,6 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
             .environmentObject(AppStore())
             .environmentObject(SoundClassifierController())
+            .environmentObject(LocalDiscoveryController())
     }
 }

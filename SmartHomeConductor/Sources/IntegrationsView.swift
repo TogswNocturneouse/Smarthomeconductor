@@ -15,8 +15,8 @@ struct IntegrationsView: View {
                     IntegrationStatusBand()
 
                     SectionHeader(
-                        title: "Brand adapters",
-                        subtitle: "Discovery and endpoint status"
+                        title: "Connection routes",
+                        subtitle: "Supported foundations and authorization requirements"
                     )
 
                     LazyVGrid(columns: columns, spacing: 11) {
@@ -141,55 +141,13 @@ private struct BrandAdapterCard: View {
                     color: stageColor
                 )
 
-                HStack {
-                    Label(
-                        "\(adapter.discoveredDevices) endpoints",
-                        systemImage: "dot.radiowaves.left.and.right"
-                    )
-                    Spacer()
-                    if let lastSync = adapter.lastSync {
-                        Text(lastSync, style: .relative)
-                    } else {
-                        Text("Never scanned")
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(AppStyle.secondaryText)
+                Text(adapter.connectionPlan)
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
 
-                HStack(spacing: 10) {
-                    Toggle(
-                        "Enabled",
-                        isOn: Binding(
-                            get: { adapter.isEnabled },
-                            set: { store.setAdapterEnabled($0, id: adapter.id) }
-                        )
-                    )
-                    .labelsHidden()
-                    .tint(stageColor)
-                    .accessibilityLabel("\(adapter.brand) enabled")
-
-                    Button {
-                        store.discoverDevices(for: adapter.id)
-                    } label: {
-                        HStack(spacing: 8) {
-                            if adapter.isScanning {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else {
-                                Image(systemName: "antenna.radiowaves.left.and.right")
-                            }
-                            Text(adapter.isScanning ? "Scanning" : "Discover")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppStyle.text)
-                        .padding(.horizontal, 13)
-                        .frame(height: 40)
-                    }
-                    .buttonStyle(GlassButtonStyle(accent: stageColor))
-                    .disabled(adapter.isScanning)
-
-                    Spacer()
-                }
+                Label(adapter.nextAction, systemImage: "arrow.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(stageColor)
             }
         }
     }

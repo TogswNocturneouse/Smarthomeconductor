@@ -13,5 +13,17 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Conductor discovers and controls the smart-home devices you choose on your local network.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Conductor scans for nearby smart-home accessories you choose to add.</string>
+	<key>NSHomeKitUsageDescription</key>
+	<string>Conductor imports the homes, rooms, and accessories you authorize from Apple Home.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_hap._tcp</string>
+		<string>_matter._tcp</string>
+		<string>_http._tcp</string>
+		<string>_rtsp._tcp</string>
+		<string>_mqtt._tcp</string>
+	</array>
 </dict>
 </plist>

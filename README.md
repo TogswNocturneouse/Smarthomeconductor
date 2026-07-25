@@ -1,21 +1,21 @@
 # SmartHomeConductor
 
-Native SwiftUI smart-home control surface for iPhone and Mac Catalyst.
+Native SwiftUI smart-home inventory, discovery, and control foundation for iPhone and Mac Catalyst.
 
-## Working Demo
+## Current Build
 
-- Persistent environmental summary with temperature, humidity, light, AQI, and classifier status
-- Shared device state for lights, sensors, hubs, TV, cameras, purifier, and AC
-- Power, dimmer, color swatches, fan speed, climate mode, media, camera, and hub controls
-- Arrive, Focus, Air care, and All off scenes
-- Add, toggle, run, and delete automation rules
-- TP-Link/Tapo, MDV/Midea, Xiaomi, Electrolux, Samsung, and Shelly adapter registry
-- Runnable RF, IR, and MQTT command simulation
-- Bundled custom Core ML sound model with Sound Analysis microphone streaming
-- Local assistant commands with an optional external AI gateway
-- UserDefaults persistence and resettable demo state
+- User-owned inventory with persistent manual add and delete
+- Initial inventory for the Electrolux Wellbeing A5, Xiaomi Air Purifier 4 Compact, MDV split AC, Samsung Smart TV, and the listed Tapo devices
+- No simulated online devices, sensor readings, events, automations, or bridge commands
+- Real Bluetooth advertisement scanning with Core Bluetooth
+- Real Bonjour browsing for HomeKit, Matter, HTTP, RTSP, and MQTT services
+- Apple Home accessory and room import through HomeKit
+- Explicit distinction between discovered, imported, reachable, and controllable devices
+- Local assistant discovery command and model-specific connection guidance
+- Bundled Core ML sound model with Sound Analysis microphone streaming
+- Adaptive iPhone and Mac Catalyst interface with a restrained animated marble surface
 
-Vendor and hardware operations currently run through isolated preview adapters. Real device access requires the matching account credentials, local network endpoints, or paired RF/IR bridge hardware; those secrets do not belong in this repository.
+See [CONNECTIVITY.md](CONNECTIVITY.md) for the device and integration matrix.
 
 ## Run
 
@@ -39,12 +39,14 @@ Open the project in Xcode:
 ./Scripts/manage.sh open
 ```
 
+HomeKit import on a physical device requires a signing profile with the HomeKit capability. Bluetooth, Apple Home, microphone, and local-network access remain subject to system permission.
+
 ## Structure
 
-- `AppStore.swift`: persistent home state and executable actions
-- `IntegrationCore.swift`: extensible brand adapter boundary
+- `AppStore.swift`: persistent user inventory, state, and guarded actions
+- `IntegrationCore.swift`: HomeKit, Bluetooth, and Bonjour discovery
 - `SoundClassifierController.swift`: Core ML and Sound Analysis stream
-- `Components.swift`: dark glass design and interaction states
+- `Components.swift`: black-marble visual system and interaction states
 - `ContentView.swift`: adaptive iPhone menu and Mac sidebar
 
 ## Optional AI Gateway

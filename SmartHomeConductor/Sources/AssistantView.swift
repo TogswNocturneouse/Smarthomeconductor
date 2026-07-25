@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import SwiftUI
 
 private struct AssistantAPIMessage: Codable {
@@ -10,6 +11,9 @@ private struct AssistantDeviceContext: Codable {
     let name: String
     let room: String
     let kind: String
+    let manufacturer: String
+    let protocols: [String]
+    let capabilities: [String]
     let isOnline: Bool
     let isOn: Bool
 }
@@ -20,6 +24,8 @@ private struct AssistantHomeContext: Codable {
     let rooms: [String]
     let devices: [AssistantDeviceContext]
     let enabledRules: [String]
+    let learnedRecords: [String]
+    let platformKnowledge: [String]
 }
 
 private struct AssistantRequest: Codable {
@@ -123,7 +129,7 @@ private final class AssistantViewModel: ObservableObject {
     @Published private(set) var messages: [AssistantMessage] = [
         AssistantMessage(
             role: .assistant,
-            content: "I am ready to help coordinate your devices, routines, maintenance, and energy use."
+            content: "I can inspect your inventory, start a nearby device scan, explain connection routes, and control endpoints only after they are genuinely connected."
         )
     ]
     @Published private(set) var isSending = false
@@ -166,6 +172,9 @@ private final class AssistantViewModel: ObservableObject {
 
     private func localFallback(context: AssistantHomeContext) -> String {
         let offline = context.devices.filter { !$0.isOnline }.map(\.name)
+        if context.devices.isEmpty {
+            return "Your inventory is empty. Ask me to scan nearby devices, import Apple Home, or add an inventory record manually."
+        }
         if offline.isEmpty {
             return "The local snapshot looks healthy: \(context.onlineDevices) devices are online and \(context.enabledRules.count) automations are enabled."
         }
@@ -175,13 +184,17 @@ private final class AssistantViewModel: ObservableObject {
 
 struct AssistantView: View {
     @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var discovery: LocalDiscoveryController
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \LearnedRecord.updatedAt, order: .reverse) private var learnedRecords: [LearnedRecord]
     @StateObject private var viewModel = AssistantViewModel()
     @State private var draft = ""
 
     private let suggestions = [
-        "What needs attention?",
-        "Run focus scene",
-        "Turn everything off"
+        "Scan for devices",
+        "Remember studio means upstairs office",
+        "How should I connect Tapo?",
+        "What needs attention?"
     ]
 
     var body: some View {
@@ -244,7 +257,11 @@ struct AssistantView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppStyle.violet)
             Spacer()
-            Text("\(store.onlineDeviceCount) devices online")
+            Text(
+                discovery.isScanning
+                    ? "\(discovery.candidates.count) candidates found"
+                    : "\(store.onlineDeviceCount) devices online"
+            )
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -316,8 +333,31 @@ struct AssistantView: View {
     }
 
     private func send(_ text: String) {
+        let normalized = text.lowercased()
+        if normalized.contains("scan") || normalized.contains("discover") || normalized.contains("find device") {
+            discovery.scanNearby()
+            viewModel.sendLocal(
+                text,
+                response: "Scanning Bluetooth advertisements and Bonjour services on your local network now. Open Devices, tap Add, then Discover to review and add candidates. Detection alone does not authorize control."
+            )
+            draft = ""
+            return
+        }
+
+        if let response = teachConductor(text) {
+            viewModel.sendLocal(text, response: response)
+            draft = ""
+            return
+        }
+
         if let response = store.executeLocalAssistantCommand(text) {
             viewModel.sendLocal(text, response: response)
+            draft = ""
+            return
+        }
+
+        if let advice = store.connectionAdvice(for: text) {
+            viewModel.sendLocal(text, response: advice)
             draft = ""
             return
         }
@@ -325,7 +365,7 @@ struct AssistantView: View {
         if store.preferences.localProcessingOnly {
             viewModel.sendLocal(
                 text,
-                response: "That request does not match a local command yet. I can report status, run Arrive, Focus, Air care, switch all devices off, or control a device by name."
+                response: "I can scan for nearby devices, explain connection routes for your brands, report inventory and connection health, run scenes when endpoints are connected, or control a connected device by name."
             )
             draft = ""
             return
@@ -340,15 +380,87 @@ struct AssistantView: View {
                     name: $0.name,
                     room: $0.room,
                     kind: $0.kind.rawValue,
+                    manufacturer: $0.manufacturer,
+                    protocols: $0.protocols.map(\.rawValue),
+                    capabilities: $0.capabilities.map(\.rawValue),
                     isOnline: $0.isOnline,
                     isOn: $0.isOn
                 )
             },
-            enabledRules: store.rules.filter(\.isEnabled).map(\.title)
+            enabledRules: store.rules.filter(\.isEnabled).map(\.title),
+            learnedRecords: learnedRecords
+                .filter(\.isConfirmed)
+                .prefix(LearnedRecord.gatewayLimit)
+                .map(\.assistantSummary),
+            platformKnowledge: [
+                "Never claim a disconnected inventory device was controlled.",
+                "HomeKit import reads accessories already authorized in Apple Home.",
+                "Matter accessories require commissioning before cluster control.",
+                "Bluetooth or Bonjour detection does not imply authentication.",
+                "SmartThings production linking uses OAuth with scoped device permissions.",
+                "Confirmed memory records may guide personalization; unconfirmed suggestions must not be treated as user policy.",
+                "Read-only operations can run automatically; physical actions require permission policies and extra confirmation for cameras, heating extremes, locks, alarms, and electrical equipment.",
+                "Use retrieval, structured tools, feedback, and offline evals for improvement instead of uncontrolled self-training.",
+                "Prefer local processing and local transports when capability and security permit."
+            ]
         )
 
         viewModel.send(text, context: context)
         draft = ""
+    }
+
+    private func teachConductor(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = trimmed.lowercased()
+
+        let kind: LearnedRecordKind
+        let prefix: String
+
+        if normalized.hasPrefix("remember ") {
+            kind = .memoryFact
+            prefix = "remember "
+        } else if normalized.hasPrefix("prefer ") {
+            kind = .preference
+            prefix = "prefer "
+        } else if normalized.hasPrefix("never ") {
+            kind = .permission
+            prefix = "never "
+        } else if normalized.hasPrefix("feedback ") {
+            kind = .feedback
+            prefix = "feedback "
+        } else {
+            return nil
+        }
+
+        let body = String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else {
+            return "Give me the detail after \(prefix.trimmingCharacters(in: .whitespaces))."
+        }
+
+        let title = body.count > 52 ? "\(body.prefix(49))..." : body
+        modelContext.insert(
+            LearnedRecord(
+                kind: kind,
+                title: title,
+                detail: body,
+                source: "Assistant chat",
+                isConfirmed: true
+            )
+        )
+        try? modelContext.save()
+
+        switch kind {
+        case .memoryFact:
+            return "Remembered. You can inspect or delete it in Teach."
+        case .preference:
+            return "Preference saved. I will include it in future assistant context."
+        case .permission:
+            return "Safety preference saved. I will treat this as a restriction unless you change it in Teach."
+        case .feedback:
+            return "Feedback recorded for the improvement log."
+        case .routine:
+            return "Routine saved."
+        }
     }
 }
 

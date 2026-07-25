@@ -1,30 +1,22 @@
 import SwiftUI
 
 enum AppStyle {
-    static let canvas = Color(red: 0.025, green: 0.032, blue: 0.032)
-    static let surface = Color(red: 0.075, green: 0.088, blue: 0.086)
-    static let surfaceRaised = Color(red: 0.105, green: 0.115, blue: 0.112)
-    static let text = Color(red: 0.94, green: 0.96, blue: 0.95)
-    static let secondaryText = Color(red: 0.61, green: 0.66, blue: 0.64)
-    static let mint = Color(red: 0.31, green: 0.94, blue: 0.72)
-    static let cyan = Color(red: 0.31, green: 0.78, blue: 0.96)
-    static let amber = Color(red: 0.98, green: 0.72, blue: 0.30)
-    static let coral = Color(red: 0.96, green: 0.42, blue: 0.45)
-    static let violet = Color(red: 0.72, green: 0.58, blue: 0.96)
-
-    static let background = LinearGradient(
-        colors: [
-            canvas,
-            Color(red: 0.035, green: 0.060, blue: 0.055),
-            Color(red: 0.060, green: 0.043, blue: 0.057)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static let canvas = Color(red: 0.012, green: 0.014, blue: 0.018)
+    static let surface = Color(red: 0.045, green: 0.050, blue: 0.062)
+    static let surfaceRaised = Color(red: 0.075, green: 0.082, blue: 0.098)
+    static let text = Color(red: 0.93, green: 0.94, blue: 0.96)
+    static let secondaryText = Color(red: 0.57, green: 0.59, blue: 0.64)
+    static let moon = Color(red: 0.56, green: 0.69, blue: 0.91)
+    static let silver = Color(red: 0.76, green: 0.79, blue: 0.84)
+    static let mint = Color(red: 0.43, green: 0.74, blue: 0.66)
+    static let cyan = moon
+    static let amber = Color(red: 0.78, green: 0.67, blue: 0.45)
+    static let coral = Color(red: 0.74, green: 0.39, blue: 0.43)
+    static let violet = Color(red: 0.59, green: 0.55, blue: 0.76)
 
     static func accent(for kind: DeviceKind) -> Color {
         switch kind {
-        case .normalLight, .dimmerLight, .colorLight, .lightSensor:
+        case .normalLight, .dimmerLight, .colorLight, .smartPlug, .lightSensor:
             amber
         case .climateSensor, .airConditioner:
             cyan
@@ -50,14 +42,64 @@ enum AppStyle {
 }
 
 struct AppBackground: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        AppStyle.background
-            .ignoresSafeArea()
-            .overlay {
-                Rectangle()
-                    .fill(Color.black.opacity(0.10))
-                    .ignoresSafeArea()
+        TimelineView(.animation(minimumInterval: reduceMotion ? 10 : 1.0 / 24.0)) { timeline in
+            let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+
+            Canvas { context, size in
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .color(AppStyle.canvas)
+                )
+
+                for index in 0..<7 {
+                    let phase = time * 0.025 + Double(index) * 0.82
+                    var vein = Path()
+                    vein.move(
+                        to: CGPoint(
+                            x: -size.width * 0.15,
+                            y: size.height * (0.13 + CGFloat(index) * 0.13)
+                        )
+                    )
+                    for step in 1...8 {
+                        let progress = CGFloat(step) / 8
+                        let x = size.width * (progress * 1.3 - 0.15)
+                        let wave = sin(Double(progress) * 8.0 + phase)
+                        let y = size.height * (0.13 + CGFloat(index) * 0.13)
+                            + CGFloat(wave) * (12 + CGFloat(index % 3) * 5)
+                        vein.addLine(to: CGPoint(x: x, y: y))
+                    }
+                    context.stroke(
+                        vein,
+                        with: .color(
+                            index.isMultiple(of: 3)
+                                ? AppStyle.moon.opacity(0.075)
+                                : Color.white.opacity(0.035)
+                        ),
+                        lineWidth: index.isMultiple(of: 2) ? 1.1 : 0.55
+                    )
+                }
+
+                let travel = (sin(time * 0.09) + 1) / 2
+                let centerX = size.width * (0.2 + CGFloat(travel) * 0.6)
+                var light = Path()
+                light.move(to: CGPoint(x: centerX - size.width * 0.5, y: -20))
+                light.addCurve(
+                    to: CGPoint(x: centerX + size.width * 0.45, y: size.height + 20),
+                    control1: CGPoint(x: centerX - size.width * 0.15, y: size.height * 0.28),
+                    control2: CGPoint(x: centerX + size.width * 0.22, y: size.height * 0.68)
+                )
+                context.stroke(
+                    light,
+                    with: .color(AppStyle.moon.opacity(0.035)),
+                    lineWidth: max(size.width * 0.22, 90)
+                )
             }
+            .ignoresSafeArea()
+            .background(AppStyle.canvas)
+        }
     }
 }
 
@@ -99,8 +141,8 @@ struct GlassPanel<Content: View>: View {
                 }
             }
             .shadow(
-                color: accent.opacity(isActive ? 0.12 : (isHovering ? 0.10 : 0)),
-                radius: isActive ? 13 : 10
+                color: accent.opacity(isActive ? 0.10 : (isHovering ? 0.075 : 0)),
+                radius: isActive ? 12 : 9
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .onHover { isHovering = $0 }
@@ -156,8 +198,8 @@ private struct GlassButtonBody: View {
             .shadow(
                 color: accent.opacity(
                     configuration.isPressed
-                        ? 0.08
-                        : (emphasized ? 0.16 : 0)
+                        ? 0.05
+                        : (emphasized ? 0.11 : 0)
                 ),
                 radius: configuration.isPressed ? 3 : 12
             )
@@ -179,20 +221,20 @@ private func glassBackground(
     let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
     shape
-        .fill(.ultraThinMaterial)
+        .fill(.thinMaterial)
         .overlay {
             shape.fill(
                 pressed
-                    ? AppStyle.surfaceRaised.opacity(0.76)
-                    : AppStyle.surface.opacity(0.68)
+                    ? AppStyle.surfaceRaised.opacity(0.82)
+                    : AppStyle.surface.opacity(0.76)
             )
         }
         .overlay {
             shape.stroke(
                 emphasized || pressed
-                    ? accent.opacity(pressed ? 0.58 : 0.42)
-                    : Color.white.opacity(0.10),
-                lineWidth: emphasized || pressed ? 1.15 : 0.7
+                    ? accent.opacity(pressed ? 0.48 : 0.34)
+                    : Color.white.opacity(0.085),
+                lineWidth: emphasized || pressed ? 1 : 0.65
             )
         }
         .overlay {

@@ -17,25 +17,27 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     SystemStatusBand()
 
-                    SectionHeader(
-                        title: "Scenes",
-                        subtitle: "Run a coordinated state across your home"
-                    )
+                    if store.onlineDeviceCount > 0 {
+                        SectionHeader(
+                            title: "Scenes",
+                            subtitle: "Coordinated actions across connected endpoints"
+                        )
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(ScenePreset.allCases) { scene in
-                                SceneButton(
-                                    scene: scene,
-                                    isActive: store.activeScene == scene
-                                ) {
-                                    withAnimation(.easeOut(duration: 0.2)) {
-                                        store.runScene(scene)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(ScenePreset.allCases) { scene in
+                                    SceneButton(
+                                        scene: scene,
+                                        isActive: store.activeScene == scene
+                                    ) {
+                                        withAnimation(.easeOut(duration: 0.2)) {
+                                            store.runScene(scene)
+                                        }
                                     }
                                 }
                             }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
                     }
 
                     LazyVGrid(columns: metricColumns, spacing: 10) {
@@ -70,8 +72,10 @@ struct DashboardView: View {
                     }
 
                     SectionHeader(
-                        title: "Priority devices",
-                        subtitle: "Live state and direct controls"
+                        title: "Device inventory",
+                        subtitle: store.onlineDeviceCount == 0
+                            ? "Owned devices awaiting a connection route"
+                            : "Live state and connection health"
                     )
 
                     LazyVGrid(columns: deviceColumns, spacing: 11) {
@@ -119,27 +123,42 @@ private struct SystemStatusBand: View {
 
     var body: some View {
         GlassPanel(
-            accent: classifier.state.isListening ? AppStyle.coral : AppStyle.mint,
-            isActive: true,
+            accent: classifier.state.isListening
+                ? AppStyle.coral
+                : (store.onlineDeviceCount > 0 ? AppStyle.mint : AppStyle.moon),
+            isActive: classifier.state.isListening || store.onlineDeviceCount > 0,
             padding: 16
         ) {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(AppStyle.mint.opacity(0.11))
+                        .fill(
+                            (store.onlineDeviceCount > 0 ? AppStyle.mint : AppStyle.moon)
+                                .opacity(0.11)
+                        )
                     Image(systemName: "wave.3.right.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(AppStyle.mint)
+                        .foregroundStyle(
+                            store.onlineDeviceCount > 0 ? AppStyle.mint : AppStyle.moon
+                        )
                 }
                 .frame(width: 48, height: 48)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Conductor is online")
+                    Text(
+                        store.onlineDeviceCount > 0
+                            ? "Home connections active"
+                            : "Inventory ready for connection"
+                    )
                         .font(.headline)
                         .foregroundStyle(AppStyle.text)
                     Text(
                         store.activeScene.map { "\($0.rawValue) scene active" }
-                            ?? "\(store.enabledRuleCount) automations watching"
+                            ?? (
+                                store.onlineDeviceCount > 0
+                                    ? "\(store.onlineDeviceCount) of \(store.devices.count) devices connected"
+                                    : "\(store.devices.count) owned devices, none connected yet"
+                            )
                     )
                     .font(.subheadline)
                     .foregroundStyle(AppStyle.secondaryText)
@@ -148,9 +167,16 @@ private struct SystemStatusBand: View {
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 5) {
-                    Label("LOCAL", systemImage: "lock.shield.fill")
+                    Label(
+                        store.onlineDeviceCount > 0 ? "LOCAL" : "SETUP",
+                        systemImage: store.onlineDeviceCount > 0
+                            ? "lock.shield.fill"
+                            : "wrench.and.screwdriver.fill"
+                    )
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(AppStyle.mint)
+                        .foregroundStyle(
+                            store.onlineDeviceCount > 0 ? AppStyle.mint : AppStyle.moon
+                        )
                     Text(classifier.state.title)
                         .font(.caption2)
                         .foregroundStyle(AppStyle.secondaryText)

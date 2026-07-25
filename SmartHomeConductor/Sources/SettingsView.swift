@@ -67,7 +67,7 @@ struct SettingsView: View {
 
                     SectionHeader(
                         title: "Local data",
-                        subtitle: "Persisted demo state on this device"
+                        subtitle: "User-owned inventory and local app state"
                     )
 
                     GlassPanel(accent: AppStyle.coral) {
@@ -83,7 +83,7 @@ struct SettingsView: View {
                             Button(role: .destructive) {
                                 showResetConfirmation = true
                             } label: {
-                                Label("Reset demo home", systemImage: "arrow.counterclockwise")
+                                Label("Clear this home", systemImage: "trash")
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(AppStyle.coral)
                                     .padding(.horizontal, 13)
@@ -116,14 +116,14 @@ struct SettingsView: View {
             }
             .background(Color.clear)
             .navigationTitle("Settings")
-            .alert("Reset demo home?", isPresented: $showResetConfirmation) {
+            .alert("Clear this home?", isPresented: $showResetConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Reset", role: .destructive) {
                     classifier.stop()
-                    store.resetDemo()
+                    store.clearHome()
                 }
             } message: {
-                Text("Devices, rules, adapter states, and events return to their sample values.")
+                Text("This removes all device records, rules, and events stored by Conductor on this device.")
             }
         }
     }

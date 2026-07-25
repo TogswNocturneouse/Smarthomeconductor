@@ -5,6 +5,7 @@ struct DevicesView: View {
     @State private var selectedKind: DeviceKind?
     @State private var selectedRoom: String?
     @State private var searchText = ""
+    @State private var isAddPresented = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 270), spacing: 11)
@@ -33,6 +34,23 @@ struct DevicesView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 17) {
+                    HStack(alignment: .center, spacing: 12) {
+                        SectionHeader(
+                            title: "Your devices",
+                            subtitle: "\(store.devices.count) inventory records"
+                        )
+
+                        Button {
+                            isAddPresented = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 15, weight: .bold))
+                                .frame(width: 42, height: 42)
+                        }
+                        .buttonStyle(GlassButtonStyle(accent: AppStyle.moon))
+                        .accessibilityLabel("Add device")
+                    }
+
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             FilterChip(title: "All", isSelected: selectedKind == nil) {
@@ -72,7 +90,13 @@ struct DevicesView: View {
                         }
                     }
 
-                    if filteredDevices.isEmpty {
+                    if store.devices.isEmpty {
+                        EmptyStateView(
+                            title: "Your home is empty",
+                            detail: "Add a device manually, import Apple Home, or scan nearby Bluetooth and Wi-Fi services.",
+                            symbol: "plus.circle"
+                        )
+                    } else if filteredDevices.isEmpty {
                         EmptyStateView(
                             title: "No matching devices",
                             detail: "Change the filters or search term.",
@@ -118,6 +142,215 @@ struct DevicesView: View {
                     .accessibilityLabel("Filter by room")
                 }
             }
+            .sheet(isPresented: $isAddPresented) {
+                AddDeviceView()
+            }
+        }
+    }
+}
+
+private struct AddDeviceView: View {
+    private enum Mode: String, CaseIterable, Identifiable {
+        case manual = "Manual"
+        case discover = "Discover"
+
+        var id: String { rawValue }
+    }
+
+    @EnvironmentObject private var store: AppStore
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var discovery: LocalDiscoveryController
+    @State private var mode: Mode = .manual
+    @State private var name = ""
+    @State private var manufacturer = ""
+    @State private var room = ""
+    @State private var kind: DeviceKind = .normalLight
+    @State private var addedCandidateIDs: Set<String> = []
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Picker("Add method", selection: $mode) {
+                        ForEach(Mode.allCases) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if mode == .manual {
+                        manualForm
+                    } else {
+                        discoveryForm
+                    }
+                }
+                .padding(18)
+            }
+            .background(AppBackground())
+            .navigationTitle("Add Device")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        discovery.stop()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var manualForm: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(
+                title: "Inventory record",
+                subtitle: "Add what you own now; connect a route when it becomes available."
+            )
+
+            GlassPanel(accent: AppStyle.moon) {
+                VStack(spacing: 14) {
+                    TextField("Device name", text: $name)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Manufacturer", text: $manufacturer)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Room (optional)", text: $room)
+                        .textFieldStyle(.roundedBorder)
+
+                    Picker("Device type", selection: $kind) {
+                        ForEach(DeviceKind.allCases) { kind in
+                            Label(kind.rawValue, systemImage: kind.symbol).tag(kind)
+                        }
+                    }
+
+                    Button {
+                        store.addDevice(
+                            name: name,
+                            room: room,
+                            kind: kind,
+                            manufacturer: manufacturer
+                        )
+                        dismiss()
+                    } label: {
+                        Label("Add to home", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.moon))
+                    .disabled(
+                        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                        manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+                }
+            }
+        }
+    }
+
+    private var discoveryForm: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(
+                title: "Nearby and authorized",
+                subtitle: "Discovery identifies candidates. Pairing or account authorization may still be required."
+            )
+
+            HStack(spacing: 10) {
+                Button {
+                    discovery.scanNearby()
+                } label: {
+                    Label(
+                        discovery.isScanning ? "Scanning" : "Scan nearby",
+                        systemImage: discovery.isScanning
+                            ? "antenna.radiowaves.left.and.right"
+                            : "dot.radiowaves.left.and.right"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                }
+                .buttonStyle(
+                    GlassButtonStyle(
+                        accent: AppStyle.moon,
+                        isActive: discovery.isScanning
+                    )
+                )
+
+                Button {
+                    discovery.importAppleHome()
+                } label: {
+                    Label("Apple Home", systemImage: "house")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(GlassButtonStyle(accent: AppStyle.silver))
+            }
+
+            HStack(spacing: 8) {
+                if discovery.isScanning {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text(discovery.status)
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
+            }
+
+            if discovery.candidates.isEmpty {
+                EmptyStateView(
+                    title: "No candidates yet",
+                    detail: "Start a nearby scan or import accessories already configured in Apple Home.",
+                    symbol: "sensor.tag.radiowaves.forward"
+                )
+            } else {
+                LazyVStack(spacing: 10) {
+                    ForEach(discovery.candidates) { candidate in
+                        candidateRow(candidate)
+                    }
+                }
+            }
+        }
+    }
+
+    private func candidateRow(_ candidate: DiscoveryCandidate) -> some View {
+        let isAdded = addedCandidateIDs.contains(candidate.id)
+        return GlassPanel(
+            accent: candidate.source == .appleHome ? AppStyle.silver : AppStyle.moon,
+            isActive: candidate.isReachable
+        ) {
+            HStack(spacing: 12) {
+                Image(systemName: candidate.source.symbol)
+                    .foregroundStyle(AppStyle.moon)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(candidate.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppStyle.text)
+                    Text("\(candidate.source.rawValue) - \(candidate.detail)")
+                        .font(.caption)
+                        .foregroundStyle(AppStyle.secondaryText)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 8)
+
+                Button {
+                    store.addDevice(candidate.makeDevice())
+                    addedCandidateIDs.insert(candidate.id)
+                } label: {
+                    Image(systemName: isAdded ? "checkmark" : "plus")
+                        .frame(width: 34, height: 34)
+                }
+                .buttonStyle(
+                    GlassButtonStyle(
+                        accent: isAdded ? AppStyle.mint : AppStyle.moon,
+                        isActive: isAdded
+                    )
+                )
+                .disabled(isAdded)
+                .accessibilityLabel(isAdded ? "Added" : "Add \(candidate.name)")
+            }
         }
     }
 }
@@ -125,6 +358,8 @@ struct DevicesView: View {
 struct DeviceDetailView: View {
     let deviceID: UUID
     @EnvironmentObject private var store: AppStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var showDeleteConfirmation = false
 
     private var device: SmartDevice? {
         store.device(id: deviceID)
@@ -173,6 +408,25 @@ struct DeviceDetailView: View {
         .background(Color.clear)
         .navigationTitle(device?.name ?? "Device")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .accessibilityLabel("Delete device")
+            }
+        }
+        .alert("Delete this device?", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                store.deleteDevice(deviceID)
+                dismiss()
+            }
+        } message: {
+            Text("This removes the inventory record and its stored state from Conductor.")
+        }
     }
 
     private func hasControls(_ device: SmartDevice) -> Bool {
