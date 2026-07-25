@@ -14,8 +14,10 @@ final class AppStore: ObservableObject {
     @Published private(set) var activeScene: ScenePreset?
     @Published private(set) var commandAudits: [CommandAuditRecord]
     @Published private(set) var persistenceIssue: String?
+    @Published private(set) var lastCommandMessage: String?
 
     let persistenceMode: PersistenceMode
+    let homeAssistant: HomeAssistantController
 
     private let defaults: UserDefaults
     private let storageKey = "conductor.user.home.v3"
@@ -27,11 +29,13 @@ final class AppStore: ObservableObject {
         defaults: UserDefaults = .standard,
         registry: AdapterRegistry = .live,
         modelContainer: ModelContainer? = nil,
-        persistenceMode: PersistenceMode = .legacyUserDefaults
+        persistenceMode: PersistenceMode = .legacyUserDefaults,
+        homeAssistant: HomeAssistantController = HomeAssistantController()
     ) {
         self.defaults = defaults
         self.registry = registry
         self.persistenceMode = persistenceMode
+        self.homeAssistant = homeAssistant
         let persistence = modelContainer.map(HomePersistenceStore.init(container:))
         homePersistence = persistence
 
@@ -84,15 +88,40 @@ final class AppStore: ObservableObject {
         classifierSlots = SampleData.classifierSlots
         activeScene = nil
         persistenceIssue = loadIssue
+        lastCommandMessage = nil
 
         let knownBrands = Set(brandAdapters.map(\.brand))
         let missingAdapters = SampleData.brandAdapters.filter {
             !knownBrands.contains($0.brand)
         }
         brandAdapters.append(contentsOf: missingAdapters)
+        var refreshedConnectionCopy = false
+        for sample in SampleData.brandAdapters where
+            sample.brand == "TP-Link / Tapo" || sample.brand == "Home Assistant"
+        {
+            guard let index = brandAdapters.firstIndex(where: { $0.brand == sample.brand }) else {
+                continue
+            }
+            if brandAdapters[index].connectionPlan != sample.connectionPlan ||
+                brandAdapters[index].nextAction != sample.nextAction
+            {
+                brandAdapters[index].connectionPlan = sample.connectionPlan
+                brandAdapters[index].nextAction = sample.nextAction
+                refreshedConnectionCopy = true
+            }
+        }
 
-        if persistence != nil, loadedSnapshot == nil || !missingAdapters.isEmpty {
+        if persistence != nil,
+            loadedSnapshot == nil || !missingAdapters.isEmpty || refreshedConnectionCopy
+        {
             persist()
+        }
+
+        for index in devices.indices where
+            devices[index].integrationID == HomeAssistantController.integrationID
+        {
+            devices[index].isOnline = false
+            devices[index].note = "Saved Home Assistant entity. Waiting for a live refresh."
         }
     }
 
@@ -149,6 +178,77 @@ final class AppStore: ObservableObject {
         }
         devices.append(device)
         devices.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        persist()
+    }
+
+    func importHomeAssistantDevices(_ importedDevices: [SmartDevice]) {
+        for imported in importedDevices {
+            if let index = devices.firstIndex(where: {
+                $0.integrationID == HomeAssistantController.integrationID &&
+                $0.externalID == imported.externalID
+            }) {
+                var updated = imported
+                updated.id = devices[index].id
+                if updated.room == "Unassigned", devices[index].room != "Unassigned" {
+                    updated.room = devices[index].room
+                }
+                devices[index] = updated
+            } else {
+                devices.append(imported)
+            }
+        }
+
+        let importedIDs = Set(importedDevices.compactMap(\.externalID))
+        for index in devices.indices where
+            devices[index].integrationID == HomeAssistantController.integrationID &&
+            !importedIDs.contains(devices[index].externalID ?? "")
+        {
+            devices[index].isOnline = false
+            devices[index].note = "Home Assistant did not return this entity during the latest sync."
+        }
+
+        devices.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        updateAdapterAfterHomeAssistantImport(importedDevices)
+        recordEvent(
+            title: "Home Assistant sync",
+            confidence: 1,
+            source: "Authenticated local API",
+            action: "\(importedDevices.count) supported entities synchronized",
+            symbol: "homekit"
+        )
+        persist()
+    }
+
+    func refreshHomeAssistantIfConfigured() async {
+        guard !homeAssistant.savedAddress.isEmpty else { return }
+        do {
+            let imported = try await homeAssistant.reconnectAndImport()
+            importHomeAssistantDevices(imported)
+        } catch {
+            for index in devices.indices where
+                devices[index].integrationID == HomeAssistantController.integrationID
+            {
+                devices[index].isOnline = false
+                devices[index].note = "Home Assistant refresh failed: \(error.localizedDescription)"
+            }
+            lastCommandMessage = error.localizedDescription
+            persist()
+        }
+    }
+
+    func disconnectHomeAssistant() {
+        homeAssistant.disconnect()
+        for index in devices.indices where
+            devices[index].integrationID == HomeAssistantController.integrationID
+        {
+            devices[index].isOnline = false
+            devices[index].note = "Home Assistant is disconnected."
+        }
+        if let index = brandAdapters.firstIndex(where: { $0.brand == "Home Assistant" }) {
+            brandAdapters[index].isEnabled = false
+            brandAdapters[index].stage = .scaffolded
+            brandAdapters[index].nextAction = "Connect the local URL and a long-lived access token."
+        }
         persist()
     }
 
@@ -275,27 +375,149 @@ final class AppStore: ObservableObject {
     }
 
     func setPower(_ isOn: Bool, for id: UUID) {
-        executeCommand(.setPower(isOn), for: id)
+        routeCommand(.setPower(isOn), for: id)
     }
 
     func setBrightness(_ brightness: Double, for id: UUID) {
-        executeCommand(.setBrightness(brightness), for: id)
+        routeCommand(.setBrightness(brightness), for: id)
     }
 
     func setColor(_ color: String, for id: UUID) {
-        executeCommand(.setColor(color), for: id)
+        routeCommand(.setColor(color), for: id)
     }
 
     func setFanSpeed(_ speed: Double, for id: UUID) {
-        executeCommand(.setFanSpeed(speed), for: id)
+        routeCommand(.setFanSpeed(speed), for: id)
     }
 
     func setTargetTemperature(_ temperature: Double, for id: UUID) {
-        executeCommand(.setTargetTemperature(temperature), for: id)
+        routeCommand(.setTargetTemperature(temperature), for: id)
     }
 
     func setMode(_ mode: String, for id: UUID) {
-        executeCommand(.setMode(mode), for: id)
+        routeCommand(.setMode(mode), for: id)
+    }
+
+    private func routeCommand(
+        _ command: DeviceCommand,
+        for id: UUID,
+        origin: CommandOrigin = .userInterface,
+        confirmed: Bool = false
+    ) {
+        guard let device = device(id: id) else { return }
+        if device.integrationID == HomeAssistantController.integrationID {
+            Task {
+                await executeHomeAssistantCommand(
+                    command,
+                    for: id,
+                    origin: origin,
+                    confirmed: confirmed
+                )
+            }
+        } else {
+            lastCommandMessage = executeCommand(
+                command,
+                for: id,
+                origin: origin,
+                confirmed: confirmed
+            ).message
+        }
+    }
+
+    @discardableResult
+    func executeHomeAssistantCommand(
+        _ command: DeviceCommand,
+        for id: UUID,
+        origin: CommandOrigin = .userInterface,
+        confirmed: Bool = false
+    ) async -> CommandExecutionResult {
+        guard let device = device(id: id) else {
+            return CommandExecutionResult(
+                outcome: .rejected,
+                message: "The target device no longer exists."
+            )
+        }
+        let risk = commandPolicy.risk(for: command, device: device)
+        guard device.isOnline else {
+            let message = "\(device.name) is offline. No command was sent."
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .rejected,
+                detail: message
+            )
+            lastCommandMessage = message
+            return CommandExecutionResult(outcome: .rejected, message: message)
+        }
+
+        let decision = commandPolicy.evaluate(
+            command: command,
+            device: device,
+            origin: origin,
+            isConfirmed: confirmed,
+            assistantLightControlAllowed: preferences.assistantLightControlAllowed
+        )
+        switch decision {
+        case let .deny(reason):
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .rejected,
+                detail: reason
+            )
+            lastCommandMessage = reason
+            return CommandExecutionResult(outcome: .rejected, message: reason)
+        case let .requireConfirmation(reason):
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .confirmationRequired,
+                detail: reason
+            )
+            lastCommandMessage = reason
+            return CommandExecutionResult(outcome: .confirmationRequired, message: reason)
+        case .allow:
+            break
+        }
+
+        do {
+            let confirmedDevice = try await homeAssistant.execute(command, device: device)
+            guard let index = devices.firstIndex(where: { $0.id == id }) else {
+                throw HomeAssistantError.invalidResponse
+            }
+            devices[index] = confirmedDevice
+            let message = "\(command.summary) confirmed by Home Assistant for \(device.name)."
+            recordCommandAudit(
+                device: confirmedDevice,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .deviceConfirmed,
+                detail: message,
+                persistAfterInsert: false
+            )
+            lastCommandMessage = message
+            persist()
+            return CommandExecutionResult(outcome: .deviceConfirmed, message: message)
+        } catch {
+            let message = "\(device.name): \(error.localizedDescription)"
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .transportUnavailable,
+                detail: message
+            )
+            lastCommandMessage = message
+            return CommandExecutionResult(outcome: .transportUnavailable, message: message)
+        }
     }
 
     func performDeviceAction(_ action: String, for id: UUID) {
@@ -487,6 +709,28 @@ final class AppStore: ObservableObject {
         persist()
     }
 
+    private func updateAdapterAfterHomeAssistantImport(_ importedDevices: [SmartDevice]) {
+        if let index = brandAdapters.firstIndex(where: { $0.brand == "Home Assistant" }) {
+            brandAdapters[index].isEnabled = true
+            brandAdapters[index].discoveredDevices = importedDevices.count
+            brandAdapters[index].lastSync = .now
+            brandAdapters[index].stage = .ready
+            brandAdapters[index].nextAction = "Connected. Refresh to synchronize live entity state."
+        }
+        let tapoCount = importedDevices.filter {
+            $0.manufacturer == "TP-Link / Tapo"
+        }.count
+        if let index = brandAdapters.firstIndex(where: { $0.brand == "TP-Link / Tapo" }) {
+            brandAdapters[index].discoveredDevices = tapoCount
+            brandAdapters[index].lastSync = .now
+            if tapoCount > 0 {
+                brandAdapters[index].isEnabled = true
+                brandAdapters[index].stage = .ready
+                brandAdapters[index].nextAction = "\(tapoCount) Tapo entities connected through Home Assistant."
+            }
+        }
+    }
+
     func executeBridgeCommand(_ id: UUID) {
         guard let index = bridgeCommands.firstIndex(where: { $0.id == id }) else { return }
         bridgeCommands[index].lastRun = .now
@@ -638,7 +882,7 @@ final class AppStore: ObservableObject {
             return "Open Devices and tap Add. Wi-Fi discovery uses Bonjour on your local network, Bluetooth discovery scans nearby advertisements, and Apple Home import reads accessories you already authorized in Home."
         }
         if text.contains("tapo") || text.contains("tp-link") {
-            return "Tapo lights, plugs, cameras, H100, and T310 can often be reached locally after setup in the Tapo app. Some firmware requires Third-Party Compatibility, and cameras need separate camera-account credentials for streams."
+            return "I will not ask you to enable Third-Party Compatibility again. Open Integrations > TP-Link / Tapo to test Apple Home Matter bridging for H100/T310 or connect Home Assistant for live lights, plugs, sensors, cameras, and commands. [Official Tapo compatibility details](https://www.tapo.com/en/faq/714/)"
         }
         if text.contains("xiaomi") || text.contains("purifier 4") {
             return "Keep the Xiaomi Air Purifier 4 Compact provisioned in Xiaomi Home. Use Matter if the hardware exposes it; otherwise import through a user-owned Home Assistant bridge or a supported MiOT adapter."

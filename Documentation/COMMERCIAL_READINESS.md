@@ -43,6 +43,7 @@ disconnect. Discovery is not authorization.
 | Apple Home / HomeKit | External validation | Test import, reads, writes, revoked access, and network loss on the owner's home |
 | Matter | External validation | Provide a commissionable Matter accessory and Apple provisioning profile |
 | MQTT / Shelly | External validation | Provide broker or Shelly test endpoint and non-production credentials |
+| Home Assistant REST bridge | Implemented; external validation | Authenticated import, typed commands, and read-back are tested with a deterministic transport; validate against the owner's installation |
 | Licensed vendor API | Blocked | Select vendor and obtain documented production API/OAuth approval |
 | Tapo private/local route | Planned | Do not ship until protocol licensing and real-hardware tests are resolved |
 | RF / IR bridge | Planned | Hardware design, replay limits, fingerprints, and electrical safety review |

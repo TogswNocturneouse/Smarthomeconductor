@@ -129,6 +129,7 @@ struct CommandAuthorizationPolicy: Sendable {
 
 enum CommandAuditOutcome: String, Codable, Sendable {
     case localStateUpdated = "Local state updated"
+    case deviceConfirmed = "Device confirmed"
     case confirmationRequired = "Confirmation required"
     case rejected = "Rejected"
     case transportUnavailable = "Transport unavailable"
@@ -151,7 +152,7 @@ struct CommandExecutionResult: Equatable, Sendable {
     var message: String
 
     var succeededLocally: Bool {
-        outcome == .localStateUpdated
+        outcome == .localStateUpdated || outcome == .deviceConfirmed
     }
 }
 

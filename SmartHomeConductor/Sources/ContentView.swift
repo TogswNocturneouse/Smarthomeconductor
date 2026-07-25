@@ -39,6 +39,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
 
 struct ContentView: View {
     @EnvironmentObject private var navigation: AppNavigation
+    @EnvironmentObject private var store: AppStore
     @State private var isMenuPresented = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.openWindow) private var openWindow
@@ -65,10 +66,14 @@ struct ContentView: View {
         }
         .tint(AppStyle.mint)
         .preferredColorScheme(.dark)
+        .task {
+            await store.refreshHomeAssistantIfConfigured()
+        }
     }
 
     private var compactShell: some View {
         DestinationView(selection: navigation.selection)
+            .id(navigation.selection)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 CompactTabBar(
                     selection: selection,
@@ -89,6 +94,7 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             DestinationView(selection: navigation.selection)
+                .id(navigation.selection)
         }
         .navigationSplitViewStyle(.balanced)
         .toolbar {

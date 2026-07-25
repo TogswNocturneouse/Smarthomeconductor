@@ -11,6 +11,7 @@ for iPhone and Mac Catalyst.
 - Real Bluetooth advertisement scanning with Core Bluetooth
 - Real Bonjour browsing for HomeKit, Matter, Shelly, HTTP, RTSP, and MQTT services
 - Apple Home accessory and room import through HomeKit
+- Authenticated Home Assistant connection with Keychain token storage, live entity import, launch refresh, typed commands, and confirmed state reads
 - Explicit distinction between discovered, imported, reachable, and physically confirmed control
 - Typed command authorization, confirmation rules, and persistent audit records
 - Versioned home configuration export and import; credentials are excluded
@@ -21,9 +22,10 @@ for iPhone and Mac Catalyst.
 - Automated GitHub verification and Release creation
 - App icon and privacy manifest
 
-Vendor control adapters are not advertised as complete. The app currently provides
-inventory, discovery, Apple Home import, policy, persistence, and adapter boundaries.
-Physical control requires a tested authenticated adapter and real-device validation.
+Direct vendor adapters are not advertised as complete. Home Assistant is the first
+implemented command transport; imported supported entities can be controlled and the
+result is read back before Conductor reports success. Physical brand compatibility still
+requires validation against the owner's device model and firmware.
 
 See [CONNECTIVITY.md](CONNECTIVITY.md) for the device and integration matrix.
 See [Documentation/COMMERCIAL_READINESS.md](Documentation/COMMERCIAL_READINESS.md)
@@ -69,6 +71,7 @@ HomeKit import on a physical device requires a signing profile with the HomeKit 
 - `CredentialStore.swift`: Keychain credential boundary
 - `AppStore.swift`: observable home state and guarded actions
 - `IntegrationCore.swift`: production adapter lifecycle plus HomeKit, Bluetooth, and Bonjour discovery
+- `HomeAssistantIntegration.swift`: authenticated REST import and confirmed command transport
 - `SoundClassifierController.swift`: Core ML and Sound Analysis stream
 - `Components.swift`: black-marble visual system and interaction states
 - `ContentView.swift`: adaptive iPhone menu, Mac sidebar, and operational toolbar

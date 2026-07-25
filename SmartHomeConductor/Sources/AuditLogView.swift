@@ -72,7 +72,7 @@ private struct AuditRecordRow: View {
 
     private var accent: Color {
         switch record.outcome {
-        case .localStateUpdated:
+        case .localStateUpdated, .deviceConfirmed:
             AppStyle.mint
         case .confirmationRequired:
             AppStyle.amber

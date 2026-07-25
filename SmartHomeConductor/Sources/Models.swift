@@ -88,6 +88,8 @@ struct SmartDevice: Identifiable, Hashable, Codable, Sendable {
     var mode: String? = nil
     var batteryLevel: Int? = nil
     var lastUpdated: Date = .now
+    var integrationID: String? = nil
+    var externalID: String? = nil
 }
 
 struct SignalEvent: Identifiable, Hashable, Codable, Sendable {

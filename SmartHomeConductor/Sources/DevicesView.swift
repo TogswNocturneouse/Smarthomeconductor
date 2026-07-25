@@ -638,6 +638,12 @@ private struct DeviceControlPanel: View {
                     }
                     .buttonStyle(GlassButtonStyle(accent: AppStyle.violet))
                 }
+
+                if let message = store.lastCommandMessage {
+                    Label(message, systemImage: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(AppStyle.secondaryText)
+                }
             }
         }
     }
@@ -651,6 +657,34 @@ private struct ValueSlider: View {
     let binding: Binding<Double>
     let range: ClosedRange<Double>
     let step: Double
+    @State private var draftValue: Double
+    @State private var isEditing = false
+
+    init(
+        title: String,
+        value: String,
+        symbol: String,
+        accent: Color,
+        binding: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double
+    ) {
+        self.title = title
+        self.value = value
+        self.symbol = symbol
+        self.accent = accent
+        self.binding = binding
+        self.range = range
+        self.step = step
+        _draftValue = State(initialValue: binding.wrappedValue)
+    }
+
+    private var displayedValue: String {
+        guard isEditing else { return value }
+        return title == "Brightness"
+            ? "\(Int(draftValue.rounded()))%"
+            : "\(Int(draftValue.rounded()))"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -659,13 +693,28 @@ private struct ValueSlider: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AppStyle.text)
                 Spacer()
-                Text(value)
+                Text(displayedValue)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(accent)
                     .monospacedDigit()
             }
-            Slider(value: binding, in: range, step: step)
+            Slider(
+                value: $draftValue,
+                in: range,
+                step: step,
+                onEditingChanged: { editing in
+                    isEditing = editing
+                    if !editing {
+                        binding.wrappedValue = draftValue
+                    }
+                }
+            )
                 .tint(accent)
+                .onChange(of: binding.wrappedValue) { _, newValue in
+                    if !isEditing {
+                        draftValue = newValue
+                    }
+                }
         }
     }
 }
@@ -705,9 +754,13 @@ private struct CameraEndpointPanel: View {
                     Image(systemName: "video.fill")
                         .font(.title2)
                         .foregroundStyle(AppStyle.coral)
-                    Text(device.isOnline ? "Camera endpoint ready" : "Camera offline")
+                    Text(device.isOnline ? "Camera metadata connected" : "Camera offline")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppStyle.secondaryText)
+                    Text("A live stream is shown only after a stream transport is authenticated.")
+                        .font(.caption2)
+                        .foregroundStyle(AppStyle.secondaryText)
+                        .multilineTextAlignment(.center)
                 }
             }
             .frame(height: 148)
@@ -715,7 +768,7 @@ private struct CameraEndpointPanel: View {
             .overlay(alignment: .topLeading) {
                 HStack(spacing: 6) {
                     StatusDot(color: device.isOnline ? AppStyle.coral : AppStyle.secondaryText)
-                    Text("LIVE")
+                    Text(device.isOnline ? "CONNECTED" : "OFFLINE")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(AppStyle.text)
                 }
@@ -846,6 +899,7 @@ private struct ReadingCell: View {
 
 private struct DeviceConnectionPanel: View {
     let device: SmartDevice
+    @EnvironmentObject private var navigation: AppNavigation
 
     var body: some View {
         GlassPanel(accent: AppStyle.violet) {
@@ -863,6 +917,35 @@ private struct DeviceConnectionPanel: View {
                     items: device.capabilities.map(\.rawValue),
                     color: AppStyle.cyan
                 )
+
+                if let externalID = device.externalID {
+                    LabeledContent("Endpoint", value: externalID)
+                        .font(.caption)
+                        .foregroundStyle(AppStyle.secondaryText)
+                        .textSelection(.enabled)
+                }
+
+                if device.manufacturer.localizedCaseInsensitiveContains("Tapo") {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 0.7)
+
+                    Button {
+                        navigation.selection = .integrations
+                    } label: {
+                        Label("Open Tapo connection routes", systemImage: "link")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.mint))
+
+                    Link(
+                        destination: URL(string: "https://www.tapo.com/en/faq/714/")!
+                    ) {
+                        Label("Official Tapo compatibility details", systemImage: "arrow.up.right.square")
+                    }
+                    .font(.caption.weight(.semibold))
+                }
             }
         }
     }

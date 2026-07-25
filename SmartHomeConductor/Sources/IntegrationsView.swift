@@ -3,6 +3,7 @@ import SwiftUI
 struct IntegrationsView: View {
     @EnvironmentObject private var store: AppStore
     @EnvironmentObject private var classifier: SoundClassifierController
+    @State private var selectedAdapter: BrandAdapterPlan?
 
     private let columns = [
         GridItem(.adaptive(minimum: 290), spacing: 11)
@@ -21,7 +22,9 @@ struct IntegrationsView: View {
 
                     LazyVGrid(columns: columns, spacing: 11) {
                         ForEach(store.brandAdapters) { adapter in
-                            BrandAdapterCard(adapter: adapter)
+                            BrandAdapterCard(adapter: adapter) {
+                                selectedAdapter = adapter
+                            }
                         }
                     }
 
@@ -52,6 +55,9 @@ struct IntegrationsView: View {
             }
             .background(Color.clear)
             .navigationTitle("Integrations")
+            .sheet(item: $selectedAdapter) { adapter in
+                IntegrationConnectionView(adapter: adapter)
+            }
         }
     }
 }
@@ -97,6 +103,7 @@ private struct IntegrationStatusBand: View {
 
 private struct BrandAdapterCard: View {
     let adapter: BrandAdapterPlan
+    let openConnection: () -> Void
     @EnvironmentObject private var store: AppStore
 
     private var stageColor: Color {
@@ -148,6 +155,323 @@ private struct BrandAdapterCard: View {
                 Label(adapter.nextAction, systemImage: "arrow.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(stageColor)
+
+                if adapter.brand == "TP-Link / Tapo" ||
+                    adapter.brand == "Home Assistant" ||
+                    adapter.brand == "Apple Home"
+                {
+                    Button(action: openConnection) {
+                        Label(
+                            adapter.isEnabled ? "Manage connection" : "Connect",
+                            systemImage: "link"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: stageColor))
+                }
+            }
+        }
+    }
+}
+
+private struct IntegrationConnectionView: View {
+    let adapter: BrandAdapterPlan
+
+    @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var discovery: LocalDiscoveryController
+    @Environment(\.dismiss) private var dismiss
+    @State private var address = ""
+    @State private var token = ""
+    @State private var resultMessage: String?
+
+    private var isTapo: Bool {
+        adapter.brand == "TP-Link / Tapo"
+    }
+
+    private var showsHomeAssistant: Bool {
+        isTapo || adapter.brand == "Home Assistant"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 18) {
+                    SectionHeader(
+                        title: adapter.brand,
+                        subtitle: "Use a route that can prove it reached the device."
+                    )
+
+                    if isTapo {
+                        tapoRoutes
+                    } else if adapter.brand == "Apple Home" {
+                        appleHomeRoute
+                    }
+
+                    if showsHomeAssistant {
+                        homeAssistantForm
+                    }
+                }
+                .padding(18)
+            }
+            .background(AppBackground())
+            .navigationTitle("Connect")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+        .task {
+            if address.isEmpty {
+                address = store.homeAssistant.savedAddress
+            }
+        }
+    }
+
+    private var tapoRoutes: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            GlassPanel(accent: AppStyle.mint) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Compatibility already enabled", systemImage: "checkmark.shield")
+                        .font(.headline)
+                        .foregroundStyle(AppStyle.text)
+                    Text(
+                        "Conductor will not send you back to that switch. Tapo states that enabling it does not guarantee a third-party connection; the next step is to test an actual route."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
+
+                    Link(
+                        destination: URL(string: "https://www.tapo.com/en/faq/714/")!
+                    ) {
+                        Label("Tapo compatibility details", systemImage: "arrow.up.right.square")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
+            }
+
+            GlassPanel(accent: AppStyle.cyan) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("H100 and T310", systemImage: "homekit")
+                        .font(.headline)
+                        .foregroundStyle(AppStyle.text)
+                    Text(
+                        "Bridge the T310 through the H100 Matter Bridge, add it to Apple Home, then import it here."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
+
+                    Button {
+                        discovery.importAppleHome()
+                        resultMessage = "Apple Home access requested. Imported accessories appear under Devices > Add > Discover."
+                    } label: {
+                        Label("Import from Apple Home", systemImage: "house")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                    }
+                    .buttonStyle(GlassButtonStyle(accent: AppStyle.cyan))
+
+                    Link(
+                        destination: URL(
+                            string: "https://community.tp-link.com/us/home/kb/detail/412808"
+                        )!
+                    ) {
+                        Label("Official H100 Matter Bridge guide", systemImage: "arrow.up.right.square")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
+            }
+
+            GlassPanel(accent: AppStyle.coral) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("C220 and TC71 cameras", systemImage: "video")
+                        .font(.headline)
+                        .foregroundStyle(AppStyle.text)
+                    Text(
+                        "Tapo cameras use a separate camera account for RTSP/ONVIF. Your TP-Link account password is not the camera-stream password."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
+                    Link(
+                        destination: URL(string: "https://www.tapo.com/en/faq/34/")!
+                    ) {
+                        Label("Official camera account and RTSP guide", systemImage: "arrow.up.right.square")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
+            }
+
+            if let resultMessage {
+                Label(resultMessage, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(AppStyle.secondaryText)
+            }
+        }
+    }
+
+    private var appleHomeRoute: some View {
+        GlassPanel(accent: AppStyle.cyan) {
+            VStack(alignment: .leading, spacing: 11) {
+                Text(
+                    "Import devices already commissioned in Apple Home. Conductor requests Home access and preserves the existing room assignment."
+                )
+                .font(.caption)
+                .foregroundStyle(AppStyle.secondaryText)
+
+                Button {
+                    discovery.importAppleHome()
+                    resultMessage = "Apple Home access requested. Open Devices > Add > Discover to review accessories."
+                } label: {
+                    Label("Request access", systemImage: "house")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                }
+                .buttonStyle(GlassButtonStyle(accent: AppStyle.cyan))
+
+                if let resultMessage {
+                    Text(resultMessage)
+                        .font(.caption)
+                        .foregroundStyle(AppStyle.secondaryText)
+                }
+            }
+        }
+    }
+
+    private var homeAssistantForm: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(
+                title: "Home Assistant",
+                subtitle: "Authenticated local import and real command transport"
+            )
+
+            GlassPanel(
+                accent: store.homeAssistant.isConnected ? AppStyle.mint : AppStyle.violet,
+                isActive: store.homeAssistant.isConnected
+            ) {
+                VStack(alignment: .leading, spacing: 13) {
+                    TextField(
+                        "http://homeassistant.local:8123",
+                        text: $address
+                    )
+                    .textContentType(.URL)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+
+                    SecureField("Long-lived access token", text: $token)
+                        .textFieldStyle(.roundedBorder)
+
+                    HStack(spacing: 10) {
+                        Button {
+                            connectHomeAssistant()
+                        } label: {
+                            Label("Connect and import", systemImage: "link")
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 42)
+                        }
+                        .buttonStyle(GlassButtonStyle(accent: AppStyle.mint))
+                        .disabled(
+                            store.homeAssistant.isWorking ||
+                            address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                            token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+
+                        if !store.homeAssistant.savedAddress.isEmpty {
+                            Button {
+                                refreshHomeAssistant()
+                            } label: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .frame(width: 42, height: 42)
+                            }
+                            .buttonStyle(GlassButtonStyle(accent: AppStyle.cyan))
+                            .disabled(store.homeAssistant.isWorking)
+                            .accessibilityLabel("Refresh saved Home Assistant connection")
+                        }
+                    }
+
+                    if store.homeAssistant.isWorking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+
+                    Label(
+                        store.homeAssistant.status,
+                        systemImage: store.homeAssistant.isConnected
+                            ? "checkmark.circle.fill"
+                            : "network"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(
+                        store.homeAssistant.isConnected
+                            ? AppStyle.mint
+                            : AppStyle.secondaryText
+                    )
+
+                    if let error = store.homeAssistant.lastError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(AppStyle.coral)
+                    }
+
+                    HStack {
+                        Link(
+                            destination: URL(
+                                string: "https://developers.home-assistant.io/docs/api/rest/"
+                            )!
+                        ) {
+                            Label("Token instructions", systemImage: "arrow.up.right.square")
+                        }
+
+                        Spacer()
+
+                        if !store.homeAssistant.savedAddress.isEmpty {
+                            Button("Disconnect", role: .destructive) {
+                                store.disconnectHomeAssistant()
+                            }
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+
+                    Link(
+                        destination: URL(string: "https://www.home-assistant.io/installation/")!
+                    ) {
+                        Label("Install Home Assistant", systemImage: "arrow.up.right.square")
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+            }
+        }
+    }
+
+    private func connectHomeAssistant() {
+        Task {
+            do {
+                let devices = try await store.homeAssistant.connect(
+                    address: address,
+                    token: token
+                )
+                store.importHomeAssistantDevices(devices)
+                token = ""
+                resultMessage = "\(devices.count) live entities imported."
+            } catch {
+                resultMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func refreshHomeAssistant() {
+        Task {
+            do {
+                let devices = try await store.homeAssistant.reconnectAndImport()
+                store.importHomeAssistantDevices(devices)
+                resultMessage = "\(devices.count) live entities refreshed."
+            } catch {
+                resultMessage = error.localizedDescription
             }
         }
     }

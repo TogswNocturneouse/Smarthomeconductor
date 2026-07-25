@@ -109,6 +109,8 @@ final class DeviceRecord {
     var kindRawValue: String
     var manufacturer: String
     var note: String
+    var integrationID: String?
+    var externalID: String?
 
     init(device: SmartDevice) {
         id = device.id
@@ -117,6 +119,8 @@ final class DeviceRecord {
         kindRawValue = device.kind.rawValue
         manufacturer = device.manufacturer
         note = device.note
+        integrationID = device.integrationID
+        externalID = device.externalID
     }
 }
 
@@ -433,7 +437,9 @@ final class HomePersistenceStore {
                 targetTemperature: state?.targetTemperature,
                 mode: state?.mode,
                 batteryLevel: state?.batteryLevel,
-                lastUpdated: state?.lastUpdated ?? .now
+                lastUpdated: state?.lastUpdated ?? .now,
+                integrationID: record.integrationID,
+                externalID: record.externalID
             )
         }
 

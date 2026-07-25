@@ -561,13 +561,22 @@ struct AssistantView: View {
 private struct AssistantBubble: View {
     let message: AssistantMessage
 
+    private var renderedContent: AttributedString {
+        (try? AttributedString(
+            markdown: message.content,
+            options: AttributedString.MarkdownParsingOptions(
+                interpretedSyntax: .inlineOnlyPreservingWhitespace
+            )
+        )) ?? AttributedString(message.content)
+    }
+
     var body: some View {
         HStack {
             if message.role == .user {
                 Spacer(minLength: 48)
             }
 
-            Text(message.content)
+            Text(renderedContent)
                 .font(.body)
                 .foregroundStyle(AppStyle.text)
                 .padding(.horizontal, 14)

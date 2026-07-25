@@ -2,6 +2,24 @@
 
 All notable changes to SmartHomeConductor are documented here.
 
+## 0.3.1 - 2026-07-25
+
+### Added
+
+- Authenticated Home Assistant REST connection for local or HTTPS endpoints.
+- Keychain-backed long-lived token storage and automatic launch refresh.
+- Live entity import for lights, switches, sensors, fans, climate, cameras, and media players.
+- Typed Home Assistant power, brightness, color, fan, and climate commands with state read-back.
+- Tappable Tapo compatibility, H100 Matter Bridge, camera RTSP, Home Assistant token, and installation links.
+
+### Fixed
+
+- Stop repeatedly telling users to enable Tapo Third-Party Compatibility.
+- Replace generic Tapo discovery advice with model-specific connection routes.
+- Prevent camera metadata connections from being labeled as live video.
+- Send slider commands only after editing ends to avoid flooding local devices.
+- Force Catalyst destination replacement so navigation does not retain stale page content.
+
 ## 0.3.0 - 2026-07-25
 
 ### Added

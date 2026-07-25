@@ -135,8 +135,8 @@ enum SampleData {
             ecosystem: "Local Tapo lights, plugs, cameras, hub, and sensors",
             stage: .scaffolded,
             deviceKinds: [.normalLight, .dimmerLight, .colorLight, .camera, .smartHub, .climateSensor],
-            connectionPlan: "Discover on the LAN, then authenticate locally where firmware permits third-party access.",
-            nextAction: "Enable Third-Party Compatibility in Tapo where available.",
+            connectionPlan: "Import through Apple Home Matter bridging or an authenticated Home Assistant connection. Direct Tapo account control is not presented as available.",
+            nextAction: "Choose a connection route and run a real endpoint test.",
             symbol: "lightbulb.led"
         ),
         BrandAdapterPlan(
@@ -180,8 +180,8 @@ enum SampleData {
             ecosystem: "Optional bridge for vendor ecosystems and local integrations",
             stage: .scaffolded,
             deviceKinds: DeviceKind.allCases,
-            connectionPlan: "Import normalized entities from a user-owned Home Assistant instance.",
-            nextAction: "Add URL and a long-lived token in a future secure connection flow.",
+            connectionPlan: "Import live entities and send commands through Home Assistant's authenticated local REST API.",
+            nextAction: "Connect the local URL and a long-lived access token.",
             symbol: "homekit"
         )
     ]
