@@ -127,7 +127,13 @@ run_ios() {
 
 run_mac() {
   build_mac
-  open "$MAC_DERIVED_DATA/Build/Products/Debug-maccatalyst/SmartHomeConductor.app"
+  osascript -e "tell application id \"$BUNDLE_ID\" to quit" >/dev/null 2>&1 || true
+  sleep 1
+  if pgrep -x "$SCHEME" >/dev/null 2>&1; then
+    pkill -x "$SCHEME" >/dev/null 2>&1 || true
+    sleep 1
+  fi
+  open -n "$MAC_DERIVED_DATA/Build/Products/Debug-maccatalyst/SmartHomeConductor.app"
 }
 
 case "${1:-}" in

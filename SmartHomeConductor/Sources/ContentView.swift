@@ -89,14 +89,18 @@ struct ContentView: View {
     }
 
     private var regularShell: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             Sidebar(selection: selection)
-                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
-        } detail: {
+                .frame(width: 220)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(width: 0.7)
+
             DestinationView(selection: navigation.selection)
                 .id(navigation.selection)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationSplitViewStyle(.balanced)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
@@ -170,30 +174,20 @@ private struct Sidebar: View {
             }
             .padding(16)
 
-            List {
-                ForEach(AppTab.allCases) { tab in
-                    Button {
-                        selection = tab
-                    } label: {
-                        Label(tab.rawValue, systemImage: tab.symbol)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(
-                                selection == tab
-                                    ? tab.accent
-                                    : AppStyle.secondaryText
-                            )
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 4) {
+                    ForEach(AppTab.allCases) { tab in
+                        SidebarTabButton(
+                            tab: tab,
+                            isSelected: selection == tab
+                        ) {
+                            selection = tab
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        selection == tab
-                            ? tab.accent.opacity(0.09)
-                            : Color.clear
-                    )
                 }
+                .padding(.horizontal, 10)
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
+            .frame(maxWidth: .infinity)
 
             HStack(spacing: 9) {
                 StatusDot(color: AppStyle.mint)
@@ -219,6 +213,48 @@ private struct Sidebar: View {
             }
         }
         .background(AppStyle.canvas.opacity(0.94))
+    }
+}
+
+private struct SidebarTabButton: View {
+    let tab: AppTab
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: tab.symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(isSelected ? tab.accent : AppStyle.secondaryText)
+                    .frame(width: 22)
+
+                Text(tab.rawValue)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? AppStyle.text : AppStyle.secondaryText)
+
+                Spacer(minLength: 8)
+
+                if isSelected {
+                    StatusDot(color: tab.accent)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 38)
+            .background(isSelected ? tab.accent.opacity(0.10) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(
+                        isSelected ? tab.accent.opacity(0.18) : Color.clear,
+                        lineWidth: 0.7
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityLabel(tab.rawValue)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

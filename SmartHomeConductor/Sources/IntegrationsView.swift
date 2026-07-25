@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct IntegrationsView: View {
     @EnvironmentObject private var store: AppStore
@@ -247,12 +248,13 @@ private struct IntegrationConnectionView: View {
                     .font(.caption)
                     .foregroundStyle(AppStyle.secondaryText)
 
-                    Link(
-                        destination: URL(string: "https://www.tapo.com/en/faq/714/")!
-                    ) {
-                        Label("Tapo compatibility details", systemImage: "arrow.up.right.square")
+                    DocumentationButton(
+                        title: "Tapo compatibility details",
+                        url: "https://www.tapo.com/en/faq/714/",
+                        accent: AppStyle.mint
+                    ) { url in
+                        open(url)
                     }
-                    .font(.subheadline.weight(.semibold))
                 }
             }
 
@@ -277,14 +279,13 @@ private struct IntegrationConnectionView: View {
                     }
                     .buttonStyle(GlassButtonStyle(accent: AppStyle.cyan))
 
-                    Link(
-                        destination: URL(
-                            string: "https://community.tp-link.com/us/home/kb/detail/412808"
-                        )!
-                    ) {
-                        Label("Official H100 Matter Bridge guide", systemImage: "arrow.up.right.square")
+                    DocumentationButton(
+                        title: "Official H100 Matter Bridge guide",
+                        url: "https://community.tp-link.com/us/home/kb/detail/412808",
+                        accent: AppStyle.cyan
+                    ) { url in
+                        open(url)
                     }
-                    .font(.subheadline.weight(.semibold))
                 }
             }
 
@@ -298,12 +299,13 @@ private struct IntegrationConnectionView: View {
                     )
                     .font(.caption)
                     .foregroundStyle(AppStyle.secondaryText)
-                    Link(
-                        destination: URL(string: "https://www.tapo.com/en/faq/34/")!
-                    ) {
-                        Label("Official camera account and RTSP guide", systemImage: "arrow.up.right.square")
+                    DocumentationButton(
+                        title: "Official camera account and RTSP guide",
+                        url: "https://www.tapo.com/en/faq/34/",
+                        accent: AppStyle.coral
+                    ) { url in
+                        open(url)
                     }
-                    .font(.subheadline.weight(.semibold))
                 }
             }
 
@@ -412,6 +414,13 @@ private struct IntegrationConnectionView: View {
                             : AppStyle.secondaryText
                     )
 
+                    if let resultMessage {
+                        Text(resultMessage)
+                            .font(.caption)
+                            .foregroundStyle(AppStyle.secondaryText)
+                            .textSelection(.enabled)
+                    }
+
                     if let error = store.homeAssistant.lastError {
                         Text(error)
                             .font(.caption)
@@ -419,12 +428,12 @@ private struct IntegrationConnectionView: View {
                     }
 
                     HStack {
-                        Link(
-                            destination: URL(
-                                string: "https://developers.home-assistant.io/docs/api/rest/"
-                            )!
-                        ) {
-                            Label("Token instructions", systemImage: "arrow.up.right.square")
+                        DocumentationButton(
+                            title: "Token instructions",
+                            url: "https://developers.home-assistant.io/docs/api/rest/",
+                            accent: AppStyle.violet
+                        ) { url in
+                            open(url)
                         }
 
                         Spacer()
@@ -437,12 +446,25 @@ private struct IntegrationConnectionView: View {
                     }
                     .font(.caption.weight(.semibold))
 
-                    Link(
-                        destination: URL(string: "https://www.home-assistant.io/installation/")!
-                    ) {
-                        Label("Install Home Assistant", systemImage: "arrow.up.right.square")
+                    DocumentationButton(
+                        title: "Install Home Assistant",
+                        url: "https://www.home-assistant.io/installation/",
+                        accent: AppStyle.violet
+                    ) { url in
+                        open(url)
                     }
-                    .font(.caption.weight(.semibold))
+                }
+            }
+        }
+    }
+
+    private func open(_ url: URL) {
+        UIPasteboard.general.string = url.absoluteString
+        resultMessage = "Opening \(url.host ?? "documentation"). The URL was also copied."
+        UIApplication.shared.open(url, options: [:]) { accepted in
+            Task { @MainActor in
+                if !accepted {
+                    resultMessage = "macOS did not accept the browser request. The URL is copied: \(url.absoluteString)"
                 }
             }
         }
@@ -474,6 +496,57 @@ private struct IntegrationConnectionView: View {
                 resultMessage = error.localizedDescription
             }
         }
+    }
+}
+
+private struct DocumentationButton: View {
+    let title: String
+    let url: String
+    let accent: Color
+    var compact = false
+    let open: (URL) -> Void
+    @State private var copied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .foregroundStyle(accent)
+                Text(title)
+                    .font(compact ? .caption.weight(.semibold) : .subheadline.weight(.semibold))
+                    .foregroundStyle(AppStyle.text)
+                Spacer(minLength: 6)
+            }
+
+            Text(url)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(AppStyle.secondaryText)
+                .lineLimit(2)
+                .textSelection(.enabled)
+
+            HStack(spacing: 8) {
+                Button {
+                    guard let destination = URL(string: url) else { return }
+                    open(destination)
+                } label: {
+                    Label("Open", systemImage: "arrow.up.right.square")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                }
+                .buttonStyle(GlassButtonStyle(accent: accent))
+
+                Button {
+                    UIPasteboard.general.string = url
+                    copied = true
+                } label: {
+                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                }
+                .buttonStyle(GlassButtonStyle(accent: copied ? AppStyle.mint : accent))
+            }
+        }
+        .padding(compact ? 0 : 0)
     }
 }
 

@@ -2,6 +2,15 @@
 
 All notable changes to SmartHomeConductor are documented here.
 
+## 0.3.4 - 2026-07-25
+
+### Fixed
+
+- Fix Mac Catalyst sidebar navigation so category changes replace the full content view after integration sheets are opened.
+- Replace fragile documentation links with visible URL rows, explicit Open and Copy actions, and copied-URL fallback feedback.
+- Add the Mac network-client entitlement needed for connection-route testing.
+- Force the Mac runner to close stale installed instances before launching the latest DerivedData build.
+
 ## 0.3.3 - 2026-07-25
 
 ### Fixed
