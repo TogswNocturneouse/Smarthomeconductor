@@ -19,7 +19,19 @@
 		A1000000000000000000000A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* Components.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2641FE312FF8A41800DBC4F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A90000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = SmartHomeConductor;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		2641FE2D2FF8A41800DBC4F8 /* SmartHomeConductorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmartHomeConductorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2650680D30143CB400F960CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* ConductorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConductorApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
@@ -34,6 +46,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2641FE2A2FF8A41800DBC4F8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A30000000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -56,6 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000000000000000000000B /* SmartHomeConductor.app */,
+				2641FE2D2FF8A41800DBC4F8 /* SmartHomeConductorTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,6 +83,7 @@
 		A40000000000000000000003 /* SmartHomeConductor */ = {
 			isa = PBXGroup;
 			children = (
+				2650680D30143CB400F960CE /* Info.plist */,
 				A40000000000000000000004 /* Sources */,
 			);
 			path = SmartHomeConductor;
@@ -88,6 +109,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2641FE2C2FF8A41800DBC4F8 /* SmartHomeConductorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2641FE352FF8A41800DBC4F8 /* Build configuration list for PBXNativeTarget "SmartHomeConductorTests" */;
+			buildPhases = (
+				2641FE292FF8A41800DBC4F8 /* Sources */,
+				2641FE2A2FF8A41800DBC4F8 /* Frameworks */,
+				2641FE2B2FF8A41800DBC4F8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2641FE322FF8A41800DBC4F8 /* PBXTargetDependency */,
+			);
+			name = SmartHomeConductorTests;
+			packageProductDependencies = (
+			);
+			productName = SmartHomeConductorTests;
+			productReference = 2641FE2D2FF8A41800DBC4F8 /* SmartHomeConductorTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A50000000000000000000001 /* SmartHomeConductor */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A80000000000000000000002 /* Build configuration list for PBXNativeTarget "SmartHomeConductor" */;
@@ -115,6 +156,11 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					2641FE2C2FF8A41800DBC4F8 = {
+						CreatedOnToolsVersion = 26.6;
+						LastSwiftMigration = 2660;
+						TestTargetID = A50000000000000000000001;
+					};
 					A50000000000000000000001 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -135,11 +181,19 @@
 			projectRoot = "";
 			targets = (
 				A50000000000000000000001 /* SmartHomeConductor */,
+				2641FE2C2FF8A41800DBC4F8 /* SmartHomeConductorTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		2641FE2B2FF8A41800DBC4F8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A70000000000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -150,6 +204,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2641FE292FF8A41800DBC4F8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A60000000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -169,7 +230,66 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		2641FE322FF8A41800DBC4F8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* SmartHomeConductor */;
+			targetProxy = 2641FE312FF8A41800DBC4F8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		2641FE332FF8A41800DBC4F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5MHV6294LG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "nagype-nisz.SmartHomeConductorTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SmartHomeConductor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SmartHomeConductor";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		2641FE342FF8A41800DBC4F8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5MHV6294LG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "nagype-nisz.SmartHomeConductorTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SmartHomeConductor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SmartHomeConductor";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
 		B10000000000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -302,6 +422,7 @@
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SmartHomeConductor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Conductor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Conductor uses Bluetooth to discover nearby hubs, sensors, and commissioning accessories.";
@@ -312,7 +433,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
@@ -339,6 +461,7 @@
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SmartHomeConductor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Conductor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Conductor uses Bluetooth to discover nearby hubs, sensors, and commissioning accessories.";
@@ -349,7 +472,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
@@ -368,6 +492,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2641FE352FF8A41800DBC4F8 /* Build configuration list for PBXNativeTarget "SmartHomeConductorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2641FE332FF8A41800DBC4F8 /* Debug */,
+				2641FE342FF8A41800DBC4F8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A80000000000000000000001 /* Build configuration list for PBXProject "SmartHomeConductor" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
