@@ -242,7 +242,7 @@ private struct IntegrationConnectionView: View {
                         .font(.headline)
                         .foregroundStyle(AppStyle.text)
                     Text(
-                        "Conductor will not send you back to that switch. Tapo states that enabling it does not guarantee a third-party connection; the next step is to test an actual route."
+                        "Conductor will not send you back to that switch. Tapo states that enabling it does not guarantee a third-party connection; the next step is an authenticated route with read-back."
                     )
                     .font(.caption)
                     .foregroundStyle(AppStyle.secondaryText)

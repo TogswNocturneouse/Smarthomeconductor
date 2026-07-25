@@ -322,7 +322,7 @@ final class HomeAssistantController: ObservableObject {
             reference: HomeAssistantAPI.tokenReference
         )) != nil
         if hasAddress, hasToken {
-            status = "Saved connection ready to test"
+            status = "Saved connection ready"
         }
     }
 

@@ -38,16 +38,99 @@ final class AppStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testLocalAssistantRefusesDisconnectedControl() throws {
+    func testLocalAssistantRefusesDisconnectedControl() async throws {
         let store = makeStore()
         let device = try XCTUnwrap(store.devices.first { $0.name == "Tapo L530" })
 
-        let response = store.executeLocalAssistantCommand("Turn Tapo L530 on")
+        let response = await store.executeLocalAssistantCommand("Turn Tapo L530 on")
 
         XCTAssertTrue(response?.contains("offline") == true)
         XCTAssertTrue(response?.contains("No command was sent") == true)
         XCTAssertFalse(store.device(id: device.id)?.isOn ?? true)
         XCTAssertEqual(store.commandAudits.first?.outcome, .rejected)
+    }
+
+    @MainActor
+    func testAssistantConnectedDeviceCommandUsesHomeAssistantTransport() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [HomeAssistantURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: "AssistantHomeAssistantTests.\(UUID().uuidString)")
+        )
+        let api = HomeAssistantAPI(
+            session: session,
+            credentialStore: InMemoryCredentialStore(),
+            defaults: defaults
+        )
+        let controller = HomeAssistantController(api: api)
+        let store = AppStore(defaults: defaults, homeAssistant: controller)
+        HomeAssistantURLProtocol.responder.setHandler { request in
+            let method = request.httpMethod ?? ""
+            let path = request.url?.path ?? ""
+            if method == "GET", path == "/api" || path == "/api/" {
+                return (200, Data(#"{"message":"API running."}"#.utf8))
+            }
+            if method == "GET", path == "/api/states" {
+                return (
+                    200,
+                    Data(
+                        #"""
+                        [
+                          {
+                            "entity_id": "light.tapo_l530",
+                            "state": "off",
+                            "last_updated": "2026-07-25T06:20:10.123456+00:00",
+                            "attributes": {
+                              "friendly_name": "Tapo L530",
+                              "brightness": 0,
+                              "supported_color_modes": ["rgb", "color_temp"]
+                            }
+                          }
+                        ]
+                        """#.utf8
+                    )
+                )
+            }
+            if method == "POST", path == "/api/services/light/turn_on" {
+                return (200, Data("[]".utf8))
+            }
+            if method == "GET", path == "/api/states/light.tapo_l530" {
+                return (
+                    200,
+                    Data(
+                        #"""
+                        {
+                          "entity_id": "light.tapo_l530",
+                          "state": "on",
+                          "last_updated": "2026-07-25T06:21:10.123456+00:00",
+                          "attributes": {
+                            "friendly_name": "Tapo L530",
+                            "brightness": 255,
+                            "supported_color_modes": ["rgb", "color_temp"]
+                          }
+                        }
+                        """#.utf8
+                    )
+                )
+            }
+            XCTFail("Unexpected request: [\(method)] [\(path)]")
+            return (404, Data())
+        }
+        defer { HomeAssistantURLProtocol.responder.setHandler(nil) }
+
+        let imported = try await controller.connect(
+            address: "http://homeassistant.local:8123",
+            token: "valid-token"
+        )
+        store.importHomeAssistantDevices(imported)
+
+        let response = await store.executeLocalAssistantCommand("Turn Tapo L530 on")
+
+        XCTAssertTrue(response?.contains("confirmed by Home Assistant") == true)
+        let device = try XCTUnwrap(store.devices.first { $0.externalID == "light.tapo_l530" })
+        XCTAssertTrue(device.isOn)
+        XCTAssertEqual(store.commandAudits.first?.outcome, .deviceConfirmed)
     }
 
     @MainActor
@@ -343,6 +426,26 @@ final class AppStoreTests: XCTestCase {
         XCTAssertEqual(matches.count, 1)
         XCTAssertTrue(try XCTUnwrap(matches.first).isOn)
         XCTAssertEqual(try XCTUnwrap(matches.first).brightness, 62)
+    }
+
+    @MainActor
+    func testHomeAssistantImportUpgradesMatchingInventoryRecord() throws {
+        let store = makeStore()
+        let originalCount = store.devices.count
+        let inventory = try XCTUnwrap(store.devices.first { $0.name == "Tapo L530" })
+        var imported = onlineLight()
+        imported.name = "Tapo L530"
+        imported.manufacturer = "TP-Link / Tapo"
+        imported.integrationID = HomeAssistantController.integrationID
+        imported.externalID = "light.tapo_l530"
+
+        store.importHomeAssistantDevices([imported])
+
+        XCTAssertEqual(store.devices.count, originalCount)
+        let upgraded = try XCTUnwrap(store.device(id: inventory.id))
+        XCTAssertEqual(upgraded.integrationID, HomeAssistantController.integrationID)
+        XCTAssertEqual(upgraded.externalID, "light.tapo_l530")
+        XCTAssertTrue(upgraded.isOnline)
     }
 
     func testHomeAssistantSendsAuthenticatedCommandAndReadsConfirmedState() async throws {

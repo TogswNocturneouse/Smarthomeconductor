@@ -96,17 +96,17 @@ final class AppStore: ObservableObject {
         }
         brandAdapters.append(contentsOf: missingAdapters)
         var refreshedConnectionCopy = false
-        for sample in SampleData.brandAdapters where
-            sample.brand == "TP-Link / Tapo" || sample.brand == "Home Assistant"
+        for templateAdapter in SampleData.brandAdapters where
+            templateAdapter.brand == "TP-Link / Tapo" || templateAdapter.brand == "Home Assistant"
         {
-            guard let index = brandAdapters.firstIndex(where: { $0.brand == sample.brand }) else {
+            guard let index = brandAdapters.firstIndex(where: { $0.brand == templateAdapter.brand }) else {
                 continue
             }
-            if brandAdapters[index].connectionPlan != sample.connectionPlan ||
-                brandAdapters[index].nextAction != sample.nextAction
+            if brandAdapters[index].connectionPlan != templateAdapter.connectionPlan ||
+                brandAdapters[index].nextAction != templateAdapter.nextAction
             {
-                brandAdapters[index].connectionPlan = sample.connectionPlan
-                brandAdapters[index].nextAction = sample.nextAction
+                brandAdapters[index].connectionPlan = templateAdapter.connectionPlan
+                brandAdapters[index].nextAction = templateAdapter.nextAction
                 refreshedConnectionCopy = true
             }
         }
@@ -195,6 +195,17 @@ final class AppStore: ObservableObject {
             if let index = devices.firstIndex(where: {
                 $0.integrationID == HomeAssistantController.integrationID &&
                 $0.externalID == imported.externalID
+            }) {
+                var updated = imported
+                updated.id = devices[index].id
+                if updated.room == "Unassigned", devices[index].room != "Unassigned" {
+                    updated.room = devices[index].room
+                }
+                devices[index] = updated
+            } else if let index = devices.firstIndex(where: {
+                $0.integrationID == nil &&
+                    $0.name.localizedCaseInsensitiveCompare(imported.name) == .orderedSame &&
+                    $0.manufacturer.localizedCaseInsensitiveCompare(imported.manufacturer) == .orderedSame
             }) {
                 var updated = imported
                 updated.id = devices[index].id
@@ -842,7 +853,7 @@ final class AppStore: ObservableObject {
         persist()
     }
 
-    func executeLocalAssistantCommand(_ text: String) -> String? {
+    func executeLocalAssistantCommand(_ text: String) async -> String? {
         let command = text.lowercased()
 
         if command.contains("all off") || command.contains("turn everything off") {
@@ -870,18 +881,18 @@ final class AppStore: ObservableObject {
         for device in devices {
             guard command.contains(device.name.lowercased()) else { continue }
             if command.contains("turn on") || command.hasSuffix(" on") {
-                return executeCommand(
+                return await executeAssistantDeviceCommand(
                     .setPower(true),
                     for: device.id,
-                    origin: .assistant
-                ).message
+                    text: text
+                )
             }
             if command.contains("turn off") || command.hasSuffix(" off") {
-                return executeCommand(
+                return await executeAssistantDeviceCommand(
                     .setPower(false),
                     for: device.id,
-                    origin: .assistant
-                ).message
+                    text: text
+                )
             }
             guard device.isOnline else {
                 return "\(device.name) is in your inventory but is not connected. Open Devices, select it, and add a compatible local or account route."
@@ -889,6 +900,51 @@ final class AppStore: ObservableObject {
         }
 
         return nil
+    }
+
+    private func executeAssistantDeviceCommand(
+        _ command: DeviceCommand,
+        for id: UUID,
+        text: String
+    ) async -> String {
+        guard let device = device(id: id) else {
+            return "The target device no longer exists."
+        }
+        let risk = commandPolicy.risk(for: command, device: device)
+        guard device.isOnline else {
+            let message = "\(device.name) is offline. No command was sent."
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: .assistant,
+                risk: risk,
+                outcome: .rejected,
+                detail: message
+            )
+            return message
+        }
+        guard device.integrationID == HomeAssistantController.integrationID else {
+            let message = "\(device.name) has no writable adapter connected. Open Integrations and connect Home Assistant before assistant control."
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: .assistant,
+                risk: risk,
+                outcome: .transportUnavailable,
+                detail: message
+            )
+            return message
+        }
+        let result = await executeHomeAssistantCommand(
+            command,
+            for: id,
+            origin: .assistant,
+            confirmed: true
+        )
+        if result.succeededLocally {
+            return result.message
+        }
+        return "\(result.message) No local state was changed."
     }
 
     func connectionAdvice(for query: String) -> String? {

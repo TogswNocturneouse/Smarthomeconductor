@@ -122,8 +122,8 @@ struct FrameworkPlan: Identifiable, Hashable, Codable, Sendable {
 
 enum AdapterStage: String, Identifiable, Hashable, Codable, Sendable {
     case ready = "Ready"
-    case scaffolded = "Available"
-    case planned = "Needs login"
+    case scaffolded = "Bridge route"
+    case planned = "External setup"
 
     var id: String { rawValue }
 }

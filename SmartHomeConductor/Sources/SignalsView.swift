@@ -62,7 +62,7 @@ struct SignalsView: View {
                     if store.signals.isEmpty {
                         EmptyStateView(
                             title: "No events yet",
-                            detail: "Run a scene, command, or classifier sample.",
+                            detail: "Run a connected command or start the sound classifier.",
                             symbol: "waveform.path.ecg"
                         )
                     } else {

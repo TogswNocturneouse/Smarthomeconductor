@@ -695,7 +695,7 @@ private struct DeviceConnectionRequiredPanel: View {
                         Text("No physical command route")
                             .font(.headline)
                             .foregroundStyle(AppStyle.text)
-                        Text("This record will not fake device control.")
+                        Text("Controls appear after device-confirmed transport is connected.")
                             .font(.caption)
                             .foregroundStyle(AppStyle.secondaryText)
                     }

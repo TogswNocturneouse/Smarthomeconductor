@@ -2,6 +2,16 @@
 
 All notable changes to SmartHomeConductor are documented here.
 
+## 0.3.3 - 2026-07-25
+
+### Fixed
+
+- Route assistant device commands through Home Assistant with REST confirmation instead of local state mutation.
+- Merge imported Home Assistant entities into matching inventory records instead of creating duplicate devices.
+- Preserve command-audit records when assistant commands are refused because a device is offline or lacks a writable adapter.
+- Remove the unused starter Objective-C test template from the repository.
+- Replace remaining lab-style copy in production UI with product-ready connection language.
+
 ## 0.3.2 - 2026-07-25
 
 ### Changed

@@ -422,15 +422,19 @@ struct AssistantView: View {
             return
         }
 
-        if let response = store.executeLocalAssistantCommand(text) {
-            viewModel.sendLocal(text, response: response)
-            draft = ""
-            return
+        Task {
+            if let response = await store.executeLocalAssistantCommand(text) {
+                viewModel.sendLocal(text, response: response)
+            } else {
+                continueAssistantSend(text)
+            }
         }
+        draft = ""
+    }
 
+    private func continueAssistantSend(_ text: String) {
         if let advice = store.connectionAdvice(for: text) {
             viewModel.sendLocal(text, response: advice)
-            draft = ""
             return
         }
 
@@ -439,7 +443,6 @@ struct AssistantView: View {
                 text,
                 response: "I can scan for nearby devices, explain connection routes for your brands, report inventory and connection health, run scenes when endpoints are connected, or control a connected device by name."
             )
-            draft = ""
             return
         }
 
@@ -468,17 +471,12 @@ struct AssistantView: View {
                 "Never claim a disconnected inventory device was controlled.",
                 "HomeKit import reads accessories already authorized in Apple Home.",
                 "Matter accessories require commissioning before cluster control.",
-                "Bluetooth or Bonjour detection does not imply authentication.",
-                "SmartThings production linking uses OAuth with scoped device permissions.",
-                "Confirmed memory records may guide personalization; unconfirmed suggestions must not be treated as user policy.",
-                "Read-only operations can run automatically; physical actions require permission policies and extra confirmation for cameras, heating extremes, locks, alarms, and electrical equipment.",
-                "Use retrieval, structured tools, feedback, and offline evals for improvement instead of uncontrolled self-training.",
-                "Prefer local processing and local transports when capability and security permit."
+                "Home Assistant is the current authenticated command transport for Tapo lights, plugs, sensors, cameras, media, climate, fans, switches, and sensors.",
+                "Tapo Third-Party Compatibility is not enough by itself; always cite the needed route."
             ]
         )
-
+        persistMessages()
         viewModel.send(text, context: context)
-        draft = ""
     }
 
     private func teachConductor(_ text: String) -> String? {
