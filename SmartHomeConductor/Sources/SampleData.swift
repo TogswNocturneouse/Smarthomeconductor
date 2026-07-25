@@ -101,7 +101,7 @@ enum SampleData {
 
     static let frameworks: [FrameworkPlan] = [
         FrameworkPlan(name: "SwiftUI", purpose: "Adaptive iPhone and Mac Catalyst interface", status: "Active", symbol: "rectangle.stack"),
-        FrameworkPlan(name: "HomeKit", purpose: "Import Apple Home rooms and accessories", status: "Active", symbol: "house"),
+        FrameworkPlan(name: "HomeKit", purpose: "Import Apple Home rooms and accessories", status: "Import", symbol: "house"),
         FrameworkPlan(name: "MatterSupport", purpose: "System commissioning for compatible accessories", status: "Foundation", symbol: "point.3.connected.trianglepath.dotted"),
         FrameworkPlan(name: "AccessorySetupKit", purpose: "Privacy-preserving accessory setup", status: "Foundation", symbol: "sensor.tag.radiowaves.forward"),
         FrameworkPlan(name: "Core Bluetooth", purpose: "Nearby BLE discovery with user consent", status: "Active", symbol: "dot.radiowaves.left.and.right"),
@@ -117,7 +117,7 @@ enum SampleData {
             ecosystem: "HomeKit and Matter accessories shared by Apple Home",
             stage: .ready,
             deviceKinds: DeviceKind.allCases,
-            connectionPlan: "Import accessories and rooms from the HomeKit database after permission.",
+            connectionPlan: "Import accessories and rooms after permission; physical writes still require adapter validation.",
             nextAction: "Use Import Apple Home from Add Device.",
             symbol: "house"
         ),
@@ -138,6 +138,15 @@ enum SampleData {
             connectionPlan: "Discover on the LAN, then authenticate locally where firmware permits third-party access.",
             nextAction: "Enable Third-Party Compatibility in Tapo where available.",
             symbol: "lightbulb.led"
+        ),
+        BrandAdapterPlan(
+            brand: "Shelly",
+            ecosystem: "Local Shelly Gen2+ relays, lights, sensors, and covers",
+            stage: .scaffolded,
+            deviceKinds: [.smartPlug, .normalLight, .dimmerLight, .climateSensor],
+            connectionPlan: "Discover the documented _shelly._tcp service, then use authenticated local RPC.",
+            nextAction: "Validate RPC authentication, state, commands, and reconnect on physical Shelly hardware.",
+            symbol: "switch.2"
         ),
         BrandAdapterPlan(
             brand: "Xiaomi Home",

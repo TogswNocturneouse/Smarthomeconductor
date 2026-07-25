@@ -1,0 +1,50 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app
+
+      - name: Build iPhone Simulator
+        run: |
+          xcodebuild -quiet \
+            -project SmartHomeConductor.xcodeproj \
+            -scheme SmartHomeConductor \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run unit tests
+        run: |
+          xcodebuild -quiet \
+            -project SmartHomeConductor.xcodeproj \
+            -scheme SmartHomeConductor \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro,OS=latest" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+      - name: Build Mac Catalyst
+        run: |
+          xcodebuild -quiet \
+            -project SmartHomeConductor.xcodeproj \
+            -scheme SmartHomeConductor \
+            -configuration Debug \
+            -destination "generic/platform=macOS,variant=Mac Catalyst" \
+            CODE_SIGNING_ALLOWED=NO \
+            build

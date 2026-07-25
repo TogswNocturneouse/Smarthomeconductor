@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 @MainActor
 final class AppStore: ObservableObject {
@@ -11,28 +12,64 @@ final class AppStore: ObservableObject {
     @Published private(set) var classifierSlots: [ClassifierSlot]
     @Published private(set) var preferences: AppPreferences
     @Published private(set) var activeScene: ScenePreset?
+    @Published private(set) var commandAudits: [CommandAuditRecord]
+    @Published private(set) var persistenceIssue: String?
+
+    let persistenceMode: PersistenceMode
 
     private let defaults: UserDefaults
     private let storageKey = "conductor.user.home.v3"
     private let registry: AdapterRegistry
+    private let homePersistence: HomePersistenceStore?
+    private let commandPolicy = CommandAuthorizationPolicy()
 
     init(
         defaults: UserDefaults = .standard,
-        registry: AdapterRegistry = .live
+        registry: AdapterRegistry = .live,
+        modelContainer: ModelContainer? = nil,
+        persistenceMode: PersistenceMode = .legacyUserDefaults
     ) {
         self.defaults = defaults
         self.registry = registry
+        self.persistenceMode = persistenceMode
+        let persistence = modelContainer.map(HomePersistenceStore.init(container:))
+        homePersistence = persistence
 
-        if
+        var loadedSnapshot: HomePersistenceSnapshot?
+        var loadIssue: String?
+        if let persistence {
+            do {
+                loadedSnapshot = try persistence.load()
+            } catch {
+                loadIssue = "SwiftData load failed: \(error.localizedDescription)"
+            }
+        }
+
+        let legacyState: PersistedState? = if
             let data = defaults.data(forKey: storageKey),
             let state = try? JSONDecoder().decode(PersistedState.self, from: data)
         {
+            state
+        } else {
+            nil
+        }
+
+        if let snapshot = loadedSnapshot {
+            devices = snapshot.devices
+            signals = snapshot.signals
+            rules = snapshot.rules
+            brandAdapters = snapshot.brandAdapters
+            bridgeCommands = snapshot.bridgeCommands
+            preferences = snapshot.preferences
+            commandAudits = snapshot.commandAudits
+        } else if let state = legacyState {
             devices = state.devices
             signals = state.signals
             rules = state.rules
             brandAdapters = state.brandAdapters
             bridgeCommands = state.bridgeCommands
             preferences = state.preferences
+            commandAudits = state.commandAudits ?? []
         } else {
             devices = SampleData.devices
             signals = SampleData.signals
@@ -40,10 +77,23 @@ final class AppStore: ObservableObject {
             brandAdapters = SampleData.brandAdapters
             bridgeCommands = SampleData.bridgeCommands
             preferences = AppPreferences()
+            commandAudits = []
         }
 
         frameworks = SampleData.frameworks
         classifierSlots = SampleData.classifierSlots
+        activeScene = nil
+        persistenceIssue = loadIssue
+
+        let knownBrands = Set(brandAdapters.map(\.brand))
+        let missingAdapters = SampleData.brandAdapters.filter {
+            !knownBrands.contains($0.brand)
+        }
+        brandAdapters.append(contentsOf: missingAdapters)
+
+        if persistence != nil, loadedSnapshot == nil || !missingAdapters.isEmpty {
+            persist()
+        }
     }
 
     var onlineDeviceCount: Int {
@@ -142,124 +192,216 @@ final class AppStore: ObservableObject {
         persist()
     }
 
-    func setPower(_ isOn: Bool, for id: UUID) {
-        updateDevice(id) {
-            $0.isOn = isOn
-            $0.lastUpdated = .now
+    @discardableResult
+    func executeCommand(
+        _ command: DeviceCommand,
+        for id: UUID,
+        origin: CommandOrigin = .userInterface,
+        confirmed: Bool = false
+    ) -> CommandExecutionResult {
+        guard let device = device(id: id) else {
+            return CommandExecutionResult(
+                outcome: .rejected,
+                message: "The target device no longer exists."
+            )
+        }
+
+        let risk = commandPolicy.risk(for: command, device: device)
+        guard device.isOnline else {
+            let message = "\(device.name) is offline. No command was sent."
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .rejected,
+                detail: message
+            )
+            return CommandExecutionResult(outcome: .rejected, message: message)
+        }
+
+        let decision = commandPolicy.evaluate(
+            command: command,
+            device: device,
+            origin: origin,
+            isConfirmed: confirmed,
+            assistantLightControlAllowed: preferences.assistantLightControlAllowed
+        )
+        switch decision {
+        case let .deny(reason):
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .rejected,
+                detail: reason
+            )
+            return CommandExecutionResult(outcome: .rejected, message: reason)
+        case let .requireConfirmation(reason):
+            recordCommandAudit(
+                device: device,
+                command: command.summary,
+                origin: origin,
+                risk: risk,
+                outcome: .confirmationRequired,
+                detail: reason
+            )
+            return CommandExecutionResult(
+                outcome: .confirmationRequired,
+                message: reason
+            )
+        case .allow:
+            break
+        }
+
+        updateDevice(id, persistAfterUpdate: false) {
+            apply(command, to: &$0)
         }
         activeScene = nil
+
+        let message = "\(command.summary) was recorded locally for \(device.name). The device adapter must confirm physical execution."
+        recordCommandAudit(
+            device: device,
+            command: command.summary,
+            origin: origin,
+            risk: risk,
+            outcome: .localStateUpdated,
+            detail: message,
+            persistAfterInsert: false
+        )
+        persist()
+        return CommandExecutionResult(outcome: .localStateUpdated, message: message)
+    }
+
+    func setPower(_ isOn: Bool, for id: UUID) {
+        executeCommand(.setPower(isOn), for: id)
     }
 
     func setBrightness(_ brightness: Double, for id: UUID) {
-        updateDevice(id) {
-            $0.brightness = brightness
-            $0.isOn = brightness > 0
-            $0.lastUpdated = .now
-        }
-        activeScene = nil
+        executeCommand(.setBrightness(brightness), for: id)
     }
 
     func setColor(_ color: String, for id: UUID) {
-        updateDevice(id) {
-            $0.colorName = color
-            $0.isOn = true
-            $0.lastUpdated = .now
-        }
-        activeScene = nil
+        executeCommand(.setColor(color), for: id)
     }
 
     func setFanSpeed(_ speed: Double, for id: UUID) {
-        updateDevice(id) {
-            $0.fanSpeed = speed
-            $0.isOn = speed > 0
-            $0.lastUpdated = .now
-        }
-        activeScene = nil
+        executeCommand(.setFanSpeed(speed), for: id)
     }
 
     func setTargetTemperature(_ temperature: Double, for id: UUID) {
-        updateDevice(id) {
-            $0.targetTemperature = temperature
-            $0.lastUpdated = .now
-        }
-        activeScene = nil
+        executeCommand(.setTargetTemperature(temperature), for: id)
     }
 
     func setMode(_ mode: String, for id: UUID) {
-        updateDevice(id) {
-            $0.mode = mode
-            $0.lastUpdated = .now
-        }
-        activeScene = nil
+        executeCommand(.setMode(mode), for: id)
     }
 
     func performDeviceAction(_ action: String, for id: UUID) {
         guard let device = device(id: id), device.isOnline else { return }
+        let detail = "Blocked because \(action) has no registered typed adapter command."
+        recordCommandAudit(
+            device: device,
+            command: action,
+            origin: .userInterface,
+            risk: .elevated,
+            outcome: .transportUnavailable,
+            detail: detail
+        )
         recordEvent(
             title: "\(device.name): \(action)",
             confidence: 1,
             source: device.manufacturer,
-            action: "Command accepted",
+            action: detail,
             symbol: device.kind.symbol
         )
     }
 
-    func runScene(_ scene: ScenePreset) {
-        switch scene {
-        case .arrive:
-            mutateDevices { device in
-                guard device.isOnline else { return }
-                if [.normalLight, .dimmerLight, .colorLight].contains(device.kind) {
-                    device.isOn = true
-                    if device.brightness != nil {
-                        device.brightness = 58
-                    }
-                }
-                if device.kind == .purifier {
-                    device.isOn = true
-                    device.fanSpeed = 2
-                }
+    @discardableResult
+    func runScene(
+        _ scene: ScenePreset,
+        origin: CommandOrigin = .userInterface,
+        confirmed: Bool = false
+    ) -> SceneExecutionReport {
+        let planned = devices.compactMap { device -> (SmartDevice, DeviceCommand)? in
+            guard device.isOnline, let command = sceneCommand(scene, device: device) else {
+                return nil
             }
-        case .focus:
-            mutateDevices { device in
-                guard device.isOnline else { return }
-                if device.room == "Studio", device.capabilities.contains(.brightness) {
-                    device.isOn = true
-                    device.brightness = 72
-                } else if device.kind == .smartTV {
-                    device.isOn = false
-                }
-            }
-        case .airCare:
-            mutateDevices { device in
-                guard device.isOnline else { return }
-                if device.kind == .purifier {
-                    device.isOn = true
-                    device.fanSpeed = 4
-                }
-                if device.kind == .airConditioner {
-                    device.isOn = true
-                    device.mode = "Auto"
-                    device.targetTemperature = 23
-                }
-            }
-        case .allOff:
-            mutateDevices { device in
-                if device.capabilities.contains(.power) {
-                    device.isOn = false
-                }
+            return (device, command)
+        }
+        var allowedCommands: [UUID: DeviceCommand] = [:]
+
+        for (device, command) in planned {
+            let risk = commandPolicy.risk(for: command, device: device)
+            let decision = commandPolicy.evaluate(
+                command: command,
+                device: device,
+                origin: origin,
+                isConfirmed: confirmed,
+                assistantLightControlAllowed: preferences.assistantLightControlAllowed
+            )
+            switch decision {
+            case .allow:
+                allowedCommands[device.id] = command
+            case let .deny(reason):
+                recordCommandAudit(
+                    device: device,
+                    command: "Run \(scene.rawValue) scene: \(command.summary)",
+                    origin: origin,
+                    risk: risk,
+                    outcome: .rejected,
+                    detail: reason,
+                    persistAfterInsert: false
+                )
+            case let .requireConfirmation(reason):
+                recordCommandAudit(
+                    device: device,
+                    command: "Run \(scene.rawValue) scene: \(command.summary)",
+                    origin: origin,
+                    risk: risk,
+                    outcome: .confirmationRequired,
+                    detail: reason,
+                    persistAfterInsert: false
+                )
             }
         }
 
-        activeScene = scene
+        mutateDevices { device in
+            guard let command = allowedCommands[device.id] else { return }
+            apply(command, to: &device)
+        }
+
+        let report = SceneExecutionReport(
+            scene: scene,
+            eligibleDevices: planned.count,
+            updatedDevices: allowedCommands.count,
+            blockedDevices: planned.count - allowedCommands.count
+        )
+        if !allowedCommands.isEmpty {
+            activeScene = scene
+            for id in allowedCommands.keys {
+                guard let device = device(id: id) else { continue }
+                recordCommandAudit(
+                    device: device,
+                    command: "Run \(scene.rawValue) scene",
+                    origin: .userInterface,
+                    risk: commandPolicy.risk(for: .setPower(device.isOn), device: device),
+                    outcome: .localStateUpdated,
+                    detail: report.message,
+                    persistAfterInsert: false
+                )
+            }
+        }
         recordEvent(
             title: "\(scene.rawValue) scene",
             confidence: 1,
             source: "Scene controller",
-            action: scene.detail,
+            action: report.message,
             symbol: scene.symbol
         )
         persist()
+        return report
     }
 
     func toggleRule(_ id: UUID) {
@@ -348,22 +490,14 @@ final class AppStore: ObservableObject {
     func executeBridgeCommand(_ id: UUID) {
         guard let index = bridgeCommands.firstIndex(where: { $0.id == id }) else { return }
         bridgeCommands[index].lastRun = .now
-        bridgeCommands[index].lastResult = "Sent"
+        bridgeCommands[index].lastResult = "Blocked: no authenticated bridge transport"
         let command = bridgeCommands[index]
-
-        if let deviceIndex = devices.firstIndex(where: {
-            command.target.localizedCaseInsensitiveContains($0.name) ||
-            $0.name.localizedCaseInsensitiveContains(command.target)
-        }) {
-            devices[deviceIndex].isOn = true
-            devices[deviceIndex].lastUpdated = .now
-        }
 
         recordEvent(
             title: command.name,
             confidence: 1,
             source: "\(command.transport.rawValue) bridge",
-            action: "Command sent to \(command.target)",
+            action: "Blocked until an authenticated, typed bridge adapter is registered",
             symbol: command.transport == .infrared
                 ? "sensor.tag.radiowaves.forward"
                 : "dot.radiowaves.left.and.right"
@@ -411,7 +545,40 @@ final class AppStore: ObservableObject {
         rules = []
         brandAdapters = SampleData.brandAdapters
         bridgeCommands = []
+        commandAudits = []
         preferences = AppPreferences()
+        activeScene = nil
+        persist()
+    }
+
+    func clearCommandAudits() {
+        commandAudits = []
+        persist()
+    }
+
+    func exportConfiguration() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(HomeExportPackage(snapshot: homeSnapshot))
+    }
+
+    func importConfiguration(_ data: Data) throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let package = try decoder.decode(HomeExportPackage.self, from: data)
+        guard package.schemaVersion <= HomeExportPackage.currentSchemaVersion else {
+            throw HomeImportError.unsupportedSchema(package.schemaVersion)
+        }
+
+        let snapshot = package.snapshot
+        devices = snapshot.devices
+        signals = snapshot.signals
+        rules = snapshot.rules
+        brandAdapters = snapshot.brandAdapters
+        bridgeCommands = snapshot.bridgeCommands
+        preferences = snapshot.preferences
+        commandAudits = snapshot.commandAudits
         activeScene = nil
         persist()
     }
@@ -420,24 +587,20 @@ final class AppStore: ObservableObject {
         let command = text.lowercased()
 
         if command.contains("all off") || command.contains("turn everything off") {
-            runScene(.allOff)
-            return "Everything with a power endpoint is off."
+            return runScene(.allOff, origin: .assistant).message
         }
         if command.contains("focus") {
-            runScene(.focus)
-            return "Focus is active. Studio lighting is set to 72% and the TV is off."
+            return runScene(.focus, origin: .assistant).message
         }
         if command.contains("air") && (
             command.contains("care") ||
             command.contains("clean") ||
             command.contains("quality")
         ) {
-            runScene(.airCare)
-            return "Air care is active. The purifier and climate controls are running."
+            return runScene(.airCare, origin: .assistant).message
         }
         if command.contains("arrive") || command.contains("home scene") {
-            runScene(.arrive)
-            return "Arrival scene is active."
+            return runScene(.arrive, origin: .assistant).message
         }
         if command.contains("status") || command.contains("attention") {
             let summary = environmentalSummary
@@ -447,16 +610,22 @@ final class AppStore: ObservableObject {
 
         for device in devices {
             guard command.contains(device.name.lowercased()) else { continue }
-            guard device.isOnline else {
-                return "\(device.name) is in your inventory but is not connected. Open Devices, select it, and add a compatible local or account route."
-            }
             if command.contains("turn on") || command.hasSuffix(" on") {
-                setPower(true, for: device.id)
-                return "\(device.name) is on."
+                return executeCommand(
+                    .setPower(true),
+                    for: device.id,
+                    origin: .assistant
+                ).message
             }
             if command.contains("turn off") || command.hasSuffix(" off") {
-                setPower(false, for: device.id)
-                return "\(device.name) is off."
+                return executeCommand(
+                    .setPower(false),
+                    for: device.id,
+                    origin: .assistant
+                ).message
+            }
+            guard device.isOnline else {
+                return "\(device.name) is in your inventory but is not connected. Open Devices, select it, and add a compatible local or account route."
             }
         }
 
@@ -492,16 +661,21 @@ final class AppStore: ObservableObject {
         return nil
     }
 
-    private func updateDevice(_ id: UUID, update: (inout SmartDevice) -> Void) {
+    private func updateDevice(
+        _ id: UUID,
+        persistAfterUpdate: Bool = true,
+        update: (inout SmartDevice) -> Void
+    ) {
         guard let index = devices.firstIndex(where: { $0.id == id }) else { return }
         update(&devices[index])
-        persist()
+        if persistAfterUpdate {
+            persist()
+        }
     }
 
     private func mutateDevices(_ update: (inout SmartDevice) -> Void) {
         for index in devices.indices {
             update(&devices[index])
-            devices[index].lastUpdated = .now
         }
     }
 
@@ -526,17 +700,116 @@ final class AppStore: ObservableObject {
         persist()
     }
 
+    private func apply(_ command: DeviceCommand, to device: inout SmartDevice) {
+        switch command {
+        case let .setPower(isOn):
+            device.isOn = isOn
+        case let .setBrightness(value):
+            device.brightness = value
+            device.isOn = value > 0
+        case let .setColor(value):
+            device.colorName = value
+            device.isOn = true
+        case let .setFanSpeed(value):
+            device.fanSpeed = value
+            device.isOn = value > 0
+        case let .setTargetTemperature(value):
+            device.targetTemperature = value
+        case let .setMode(value):
+            device.mode = value
+        }
+        device.lastUpdated = .now
+    }
+
+    private func sceneCommand(
+        _ scene: ScenePreset,
+        device: SmartDevice
+    ) -> DeviceCommand? {
+        switch scene {
+        case .arrive:
+            if [.normalLight, .dimmerLight, .colorLight].contains(device.kind) {
+                return device.capabilities.contains(.brightness)
+                    ? .setBrightness(58)
+                    : .setPower(true)
+            }
+            if device.kind == .purifier {
+                return .setFanSpeed(2)
+            }
+        case .focus:
+            if device.room == "Studio", device.capabilities.contains(.brightness) {
+                return .setBrightness(72)
+            }
+            if device.kind == .smartTV {
+                return .setPower(false)
+            }
+        case .airCare:
+            if device.kind == .purifier {
+                return .setFanSpeed(4)
+            }
+            if device.kind == .airConditioner {
+                return .setTargetTemperature(23)
+            }
+        case .allOff:
+            if device.capabilities.contains(.power) {
+                return .setPower(false)
+            }
+        }
+        return nil
+    }
+
+    private func recordCommandAudit(
+        device: SmartDevice,
+        command: String,
+        origin: CommandOrigin,
+        risk: CommandRisk,
+        outcome: CommandAuditOutcome,
+        detail: String,
+        persistAfterInsert: Bool = true
+    ) {
+        commandAudits.insert(
+            CommandAuditRecord(
+                deviceID: device.id,
+                deviceName: device.name,
+                command: command,
+                origin: origin,
+                risk: risk,
+                outcome: outcome,
+                detail: detail
+            ),
+            at: 0
+        )
+        commandAudits = Array(commandAudits.prefix(500))
+        if persistAfterInsert {
+            persist()
+        }
+    }
+
     private func persist() {
-        let state = PersistedState(
+        if let homePersistence {
+            do {
+                try homePersistence.save(homeSnapshot)
+                persistenceIssue = nil
+            } catch {
+                persistenceIssue = "SwiftData save failed: \(error.localizedDescription)"
+            }
+            return
+        }
+
+        let state = PersistedState(snapshot: homeSnapshot)
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        defaults.set(data, forKey: storageKey)
+    }
+
+    private var homeSnapshot: HomePersistenceSnapshot {
+        HomePersistenceSnapshot(
             devices: devices,
             signals: signals,
             rules: rules,
             brandAdapters: brandAdapters,
             bridgeCommands: bridgeCommands,
-            preferences: preferences
+            preferences: preferences,
+            commandAudits: commandAudits
         )
-        guard let data = try? JSONEncoder().encode(state) else { return }
-        defaults.set(data, forKey: storageKey)
     }
 
     private func average(_ values: [Double]) -> Double? {
@@ -568,4 +841,15 @@ private struct PersistedState: Codable {
     var brandAdapters: [BrandAdapterPlan]
     var bridgeCommands: [BridgeCommand]
     var preferences: AppPreferences
+    var commandAudits: [CommandAuditRecord]?
+
+    init(snapshot: HomePersistenceSnapshot) {
+        devices = snapshot.devices
+        signals = snapshot.signals
+        rules = snapshot.rules
+        brandAdapters = snapshot.brandAdapters
+        bridgeCommands = snapshot.bridgeCommands
+        preferences = snapshot.preferences
+        commandAudits = snapshot.commandAudits
+    }
 }

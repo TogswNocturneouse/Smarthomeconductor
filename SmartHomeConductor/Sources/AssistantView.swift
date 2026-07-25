@@ -119,9 +119,22 @@ private struct AssistantMessage: Identifiable {
         case assistant
     }
 
-    let id = UUID()
+    let id: UUID
     let role: Role
     let content: String
+    let createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        role: Role,
+        content: String,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.createdAt = createdAt
+    }
 }
 
 @MainActor
@@ -136,6 +149,36 @@ private final class AssistantViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let service = HomeConductorAssistantService()
+    private var restoredHistory = false
+
+    func restore(_ records: [AssistantMessageRecord]) {
+        guard !restoredHistory else { return }
+        restoredHistory = true
+        let restored = records.compactMap { record -> AssistantMessage? in
+            guard let role = AssistantMessage.Role(rawValue: record.roleRawValue) else {
+                return nil
+            }
+            return AssistantMessage(
+                id: record.id,
+                role: role,
+                content: record.content,
+                createdAt: record.createdAt
+            )
+        }
+        if !restored.isEmpty {
+            messages = restored
+        }
+    }
+
+    func clearHistory() {
+        messages = [
+            AssistantMessage(
+                role: .assistant,
+                content: "Chat history was cleared. Confirmed memory remains available in Teach."
+            )
+        ]
+        errorMessage = nil
+    }
 
     func sendLocal(_ text: String, response: String) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -187,8 +230,10 @@ struct AssistantView: View {
     @EnvironmentObject private var discovery: LocalDiscoveryController
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LearnedRecord.updatedAt, order: .reverse) private var learnedRecords: [LearnedRecord]
+    @Query(sort: \AssistantMessageRecord.createdAt) private var storedMessages: [AssistantMessageRecord]
     @StateObject private var viewModel = AssistantViewModel()
     @State private var draft = ""
+    @State private var showClearHistoryConfirmation = false
 
     private let suggestions = [
         "Scan for devices",
@@ -203,7 +248,7 @@ struct AssistantView: View {
                 connectionStrip
 
                 ScrollViewReader { proxy in
-                    ScrollView {
+                    ScrollView(.vertical, showsIndicators: true) {
                         LazyVStack(spacing: 12) {
                             suggestionRow
 
@@ -247,7 +292,34 @@ struct AssistantView: View {
                 composer
             }
             .navigationTitle("Home Assistant")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showClearHistoryConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .help("Clear assistant chat")
+                }
+            }
+            .confirmationDialog(
+                "Clear assistant chat?",
+                isPresented: $showClearHistoryConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Clear Chat", role: .destructive) {
+                    viewModel.clearHistory()
+                }
+            } message: {
+                Text("Confirmed memory and preferences in Teach will not be deleted.")
+            }
             .background(Color.clear)
+            .task {
+                viewModel.restore(storedMessages)
+            }
+            .onChange(of: viewModel.messages.count) { _, _ in
+                persistMessages()
+            }
         }
     }
 
@@ -460,6 +532,28 @@ struct AssistantView: View {
             return "Feedback recorded for the improvement log."
         case .routine:
             return "Routine saved."
+        }
+    }
+
+    private func persistMessages() {
+        do {
+            let existing = try modelContext.fetch(
+                FetchDescriptor<AssistantMessageRecord>()
+            )
+            existing.forEach(modelContext.delete)
+            for message in viewModel.messages.suffix(200) {
+                modelContext.insert(
+                    AssistantMessageRecord(
+                        id: message.id,
+                        roleRawValue: message.role.rawValue,
+                        content: message.content,
+                        createdAt: message.createdAt
+                    )
+                )
+            }
+            try modelContext.save()
+        } catch {
+            viewModel.errorMessage = "Assistant history could not be saved locally."
         }
     }
 }

@@ -13,7 +13,7 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 22) {
                     SystemStatusBand()
 
@@ -31,7 +31,7 @@ struct DashboardView: View {
                                         isActive: store.activeScene == scene
                                     ) {
                                         withAnimation(.easeOut(duration: 0.2)) {
-                                            store.runScene(scene)
+                                            _ = store.runScene(scene)
                                         }
                                     }
                                 }

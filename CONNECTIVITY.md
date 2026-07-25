@@ -1,6 +1,9 @@
 # Connectivity Matrix
 
-Conductor does not treat network detection as authorization. A device becomes controllable only after a compatible local protocol, Apple Home import, Matter commissioning, vendor OAuth grant, or user-owned bridge provides an authenticated route.
+Conductor does not treat network detection, Apple Home import, or reachability as
+physical command confirmation. A device becomes controllable only after a compatible
+adapter is authenticated, capability-mapped, real-device tested, and able to confirm
+the command result.
 
 ## Implemented Foundations
 
@@ -8,10 +11,11 @@ Conductor does not treat network detection as authorization. A device becomes co
 | --- | --- |
 | Manual inventory | Add and delete persistent device records |
 | Bluetooth | Scan nearby BLE advertisements with Core Bluetooth |
-| Local network | Browse `_hap._tcp`, `_matter._tcp`, `_http._tcp`, `_rtsp._tcp`, and `_mqtt._tcp` with Network |
-| Apple Home | Import authorized homes, rooms, accessories, reachability, model, and manufacturer with HomeKit |
+| Local network | Browse `_hap._tcp`, `_matter._tcp`, `_shelly._tcp`, `_http._tcp`, `_rtsp._tcp`, and `_mqtt._tcp` with Network |
+| Apple Home | Import authorized homes, rooms, accessories, reachability, model, and manufacturer with HomeKit; command dispatch still requires validation |
 | Matter | Detect advertisements; system commissioning and cluster control remain the next transport layer |
-| Assistant | Starts nearby scanning and provides local connection guidance without claiming disconnected control |
+| Adapter contract | Discovery, authentication, reads, typed execution, updates, reconnect, health, and disconnect |
+| Assistant | Starts nearby scanning, applies compiled command policy, and audits rejected attempts |
 
 ## Device Routes
 
@@ -28,11 +32,12 @@ Conductor does not treat network detection as authorization. A device becomes co
 
 ## Recommended Expansion Order
 
-1. Register a SmartThings API Access App and implement OAuth callback/token storage in a secure backend.
-2. Add Home Assistant REST/WebSocket import as the vendor-neutral bridge for Xiaomi, Electrolux, and Midea.
-3. Add authenticated Tapo local transport and capability mapping for the listed models.
-4. Add Matter commissioning and cluster control.
-5. Add encrypted RF/IR bridge provisioning, learning, replay limits, and device fingerprints.
+1. Validate Apple Home reads and typed writes on physical accessories.
+2. Add and validate local MQTT/Shelly state and command transports.
+3. Select one documented, properly licensed vendor API and obtain production approval.
+4. Add Home Assistant REST/WebSocket import as an optional vendor-neutral bridge.
+5. Add Matter commissioning and cluster control.
+6. Add encrypted RF/IR bridge provisioning, learning, replay limits, and device fingerprints.
 
 ## Primary References
 

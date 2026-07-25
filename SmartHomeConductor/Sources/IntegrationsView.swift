@@ -10,13 +10,13 @@ struct IntegrationsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 20) {
                     IntegrationStatusBand()
 
                     SectionHeader(
                         title: "Connection routes",
-                        subtitle: "Supported foundations and authorization requirements"
+                        subtitle: "Discovery, authorization, and validation boundaries"
                     )
 
                     LazyVGrid(columns: columns, spacing: 11) {
@@ -164,7 +164,7 @@ private struct BridgeCommandCard: View {
     var body: some View {
         GlassPanel(
             accent: accent,
-            isActive: command.lastResult == "Sent"
+            isActive: false
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
@@ -186,7 +186,12 @@ private struct BridgeCommandCard: View {
                     }
                     Spacer()
                     if let result = command.lastResult {
-                        Pill(result, color: AppStyle.mint)
+                        Pill(
+                            result,
+                            color: result.hasPrefix("Blocked")
+                                ? AppStyle.coral
+                                : AppStyle.secondaryText
+                        )
                     }
                 }
 
@@ -243,7 +248,7 @@ private struct ClassifierSlotCard: View {
                         .foregroundStyle(AppStyle.text)
                     Spacer()
                     Pill(
-                        modelIsBundled ? "READY" : "MISSING",
+                        modelIsBundled ? "BUNDLED" : "MISSING",
                         color: modelIsBundled ? AppStyle.mint : AppStyle.amber
                     )
                 }

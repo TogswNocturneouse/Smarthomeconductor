@@ -32,7 +32,7 @@ struct DevicesView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 17) {
                     HStack(alignment: .center, spacing: 12) {
                         SectionHeader(
@@ -169,7 +169,7 @@ private struct AddDeviceView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 18) {
                     Picker("Add method", selection: $mode) {
                         ForEach(Mode.allCases) { mode in
@@ -366,7 +366,7 @@ struct DeviceDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical, showsIndicators: true) {
             if let device {
                 VStack(alignment: .leading, spacing: 18) {
                     DeviceIdentityPanel(device: device)

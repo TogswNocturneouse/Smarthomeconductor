@@ -2,6 +2,26 @@
 
 All notable changes to SmartHomeConductor are documented here.
 
+## 0.3.0 - 2026-07-25
+
+### Added
+
+- Normalized SwiftData persistence for homes, rooms, devices, capabilities, states,
+  automations, events, preferences, integrations, bridge definitions, and command audits.
+- Legacy `UserDefaults` import with explicit in-memory recovery mode.
+- Versioned home configuration export and import.
+- Typed command authorization with capability checks, confirmation policy, and audit history.
+- Keychain-only integration credential storage boundary.
+- Full production adapter lifecycle contract.
+- Mac menu commands, keyboard shortcuts, operational toolbar, settings window, and command-audit window.
+- App icon, privacy manifest, commercial-readiness ledger, policy drafts, CI verification, and Mac archive tooling.
+
+### Changed
+
+- Lower the app deployment target from iOS 26.0 to iOS 18.0.
+- Stop bridge commands and offline assistant requests from claiming physical execution.
+- Label imports, bundled models, and adapter scaffolds according to their actual state.
+
 ## 0.2.2 - 2026-07-25
 
 ### Changed

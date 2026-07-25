@@ -65,3 +65,23 @@ extension LearnedRecord {
         "\(kind.rawValue): \(title) - \(detail)"
     }
 }
+
+@Model
+final class AssistantMessageRecord {
+    var id: UUID
+    var roleRawValue: String
+    var content: String
+    var createdAt: Date
+
+    init(
+        id: UUID,
+        roleRawValue: String,
+        content: String,
+        createdAt: Date
+    ) {
+        self.id = id
+        self.roleRawValue = roleRawValue
+        self.content = content
+        self.createdAt = createdAt
+    }
+}

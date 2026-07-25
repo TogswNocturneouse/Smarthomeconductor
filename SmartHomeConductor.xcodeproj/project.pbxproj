@@ -26,6 +26,14 @@
 		A10000000000000000000012 /* AppStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* AppStoreTests.swift */; };
 		A10000000000000000000013 /* LearningModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* LearningModels.swift */; };
 		A10000000000000000000014 /* LearningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* LearningView.swift */; };
+		A10000000000000000000015 /* CommandSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* CommandSafety.swift */; };
+		A10000000000000000000016 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* CredentialStore.swift */; };
+		A10000000000000000000017 /* HomePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* HomePersistence.swift */; };
+		A10000000000000000000018 /* ConfigurationDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* ConfigurationDocument.swift */; };
+		A10000000000000000000019 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* AppNavigation.swift */; };
+		A1000000000000000000001A /* AuditLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* AuditLogView.swift */; };
+		A1000000000000000000001B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* Assets.xcassets */; };
+		A1000000000000000000001C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +68,14 @@
 		A20000000000000000000012 /* AppStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* LearningModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningModels.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* LearningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningView.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* CommandSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandSafety.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* HomePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePersistence.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* ConfigurationDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationDocument.swift; sourceTree = "<group>"; };
+		A20000000000000000000019 /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
+		A2000000000000000000001A /* AuditLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditLogView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2000000000000000000001C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A2000000000000000000000B /* SmartHomeConductor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartHomeConductor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -117,7 +133,13 @@
 				A20000000000000000000013 /* LearningModels.swift */,
 				A2000000000000000000000E /* AppStore.swift */,
 				A2000000000000000000000F /* IntegrationCore.swift */,
+				A20000000000000000000015 /* CommandSafety.swift */,
+				A20000000000000000000016 /* CredentialStore.swift */,
+				A20000000000000000000017 /* HomePersistence.swift */,
 				A20000000000000000000010 /* SoundClassifierController.swift */,
+				A20000000000000000000018 /* ConfigurationDocument.swift */,
+				A20000000000000000000019 /* AppNavigation.swift */,
+				A2000000000000000000001A /* AuditLogView.swift */,
 				A20000000000000000000003 /* SampleData.swift */,
 				A20000000000000000000004 /* ContentView.swift */,
 				A20000000000000000000005 /* DashboardView.swift */,
@@ -144,6 +166,8 @@
 		A40000000000000000000006 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				A2000000000000000000001B /* Assets.xcassets */,
+				A2000000000000000000001C /* PrivacyInfo.xcprivacy */,
 				A20000000000000000000011 /* MySoundClassifier.mlmodel */,
 			);
 			path = Resources;
@@ -241,6 +265,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1000000000000000000001B /* Assets.xcassets in Resources */,
+				A1000000000000000000001C /* PrivacyInfo.xcprivacy in Resources */,
 				A10000000000000000000011 /* MySoundClassifier.mlmodel in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,7 +291,13 @@
 				A10000000000000000000013 /* LearningModels.swift in Sources */,
 				A1000000000000000000000E /* AppStore.swift in Sources */,
 				A1000000000000000000000F /* IntegrationCore.swift in Sources */,
+				A10000000000000000000015 /* CommandSafety.swift in Sources */,
+				A10000000000000000000016 /* CredentialStore.swift in Sources */,
+				A10000000000000000000017 /* HomePersistence.swift in Sources */,
 				A10000000000000000000010 /* SoundClassifierController.swift in Sources */,
+				A10000000000000000000018 /* ConfigurationDocument.swift in Sources */,
+				A10000000000000000000019 /* AppNavigation.swift in Sources */,
+				A1000000000000000000001A /* AuditLogView.swift in Sources */,
 				A10000000000000000000003 /* SampleData.swift in Sources */,
 				A10000000000000000000004 /* ContentView.swift in Sources */,
 				A10000000000000000000005 /* DashboardView.swift in Sources */,
@@ -297,23 +329,23 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				MACOSX_DEPLOYMENT_TARGET = 26.3;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "nagype-nisz.SmartHomeConductorTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SmartHomeConductor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SmartHomeConductor";
-				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Debug;
 		};
@@ -323,22 +355,22 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				MACOSX_DEPLOYMENT_TARGET = 26.3;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "nagype-nisz.SmartHomeConductorTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SmartHomeConductor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SmartHomeConductor";
-				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Release;
 		};
@@ -470,7 +502,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_ENTITLEMENTS = SmartHomeConductor/SmartHomeConductor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				ENABLE_PREVIEWS = YES;
@@ -479,7 +511,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Conductor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Conductor uses Bluetooth to discover nearby hubs, sensors, and commissioning accessories.";
-				INFOPLIST_KEY_NSBonjourServices = "_hap._tcp _matter._tcp _mqtt._tcp";
+				INFOPLIST_KEY_NSBonjourServices = "_hap._tcp _matter._tcp _shelly._tcp _http._tcp _rtsp._tcp _mqtt._tcp";
 				INFOPLIST_KEY_NSHomeKitUsageDescription = "Conductor uses HomeKit to discover and control your smart home accessories.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Conductor scans your local network to find hubs, cameras, and smart devices you choose to connect.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Conductor can listen locally for sounds you choose to classify for automations.";
@@ -489,8 +521,8 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.conductor.smart.home;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -510,7 +542,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_ENTITLEMENTS = SmartHomeConductor/SmartHomeConductor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 5MHV6294LG;
 				ENABLE_PREVIEWS = YES;
@@ -519,7 +551,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Conductor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Conductor uses Bluetooth to discover nearby hubs, sensors, and commissioning accessories.";
-				INFOPLIST_KEY_NSBonjourServices = "_hap._tcp _matter._tcp _mqtt._tcp";
+				INFOPLIST_KEY_NSBonjourServices = "_hap._tcp _matter._tcp _shelly._tcp _http._tcp _rtsp._tcp _mqtt._tcp";
 				INFOPLIST_KEY_NSHomeKitUsageDescription = "Conductor uses HomeKit to discover and control your smart home accessories.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Conductor scans your local network to find hubs, cameras, and smart devices you choose to connect.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Conductor can listen locally for sounds you choose to classify for automations.";
@@ -529,8 +561,8 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.conductor.smart.home;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

@@ -38,9 +38,17 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
 }
 
 struct ContentView: View {
-    @State private var selection: AppTab = .home
+    @EnvironmentObject private var navigation: AppNavigation
     @State private var isMenuPresented = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.openWindow) private var openWindow
+
+    private var selection: Binding<AppTab> {
+        Binding(
+            get: { navigation.selection },
+            set: { navigation.selection = $0 }
+        )
+    }
 
     var body: some View {
         ZStack {
@@ -60,15 +68,15 @@ struct ContentView: View {
     }
 
     private var compactShell: some View {
-        DestinationView(selection: selection)
+        DestinationView(selection: navigation.selection)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 CompactTabBar(
-                    selection: $selection,
+                    selection: selection,
                     isMenuPresented: $isMenuPresented
                 )
             }
             .sheet(isPresented: $isMenuPresented) {
-                AppMenuView(selection: $selection)
+                AppMenuView(selection: selection)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
                     .presentationBackground(.ultraThinMaterial)
@@ -77,12 +85,29 @@ struct ContentView: View {
 
     private var regularShell: some View {
         NavigationSplitView {
-            Sidebar(selection: $selection)
+            Sidebar(selection: selection)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
-            DestinationView(selection: selection)
+            DestinationView(selection: navigation.selection)
         }
         .navigationSplitViewStyle(.balanced)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    openWindow(id: "command-audit")
+                } label: {
+                    Image(systemName: "checklist")
+                }
+                .help("Command audit")
+
+                Button {
+                    openWindow(id: "conductor-settings")
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .help("Conductor settings")
+            }
+        }
     }
 }
 

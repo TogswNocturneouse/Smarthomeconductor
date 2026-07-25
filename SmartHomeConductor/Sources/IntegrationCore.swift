@@ -3,9 +3,51 @@ import Foundation
 @preconcurrency import HomeKit
 @preconcurrency import Network
 
+struct AdapterAuthenticationRequest: Sendable {
+    let credentialReference: String?
+    let parameters: [String: String]
+}
+
+struct AdapterSessionInfo: Sendable {
+    let adapter: String
+    let authenticatedAt: Date
+    let expiresAt: Date?
+}
+
+struct AdapterDeviceState: Sendable {
+    let deviceID: String
+    let values: [String: String]
+    let observedAt: Date
+}
+
+struct AdapterUpdate: Sendable {
+    let deviceID: String
+    let state: AdapterDeviceState
+}
+
+enum AdapterHealthStatus: String, Sendable {
+    case healthy
+    case degraded
+    case disconnected
+    case authenticationRequired
+}
+
+struct AdapterHealth: Sendable {
+    let status: AdapterHealthStatus
+    let detail: String
+    let checkedAt: Date
+}
+
 protocol BrandDeviceAdapter: Sendable {
     var brand: String { get }
-    func discover() async -> [DiscoveredAccessory]
+    func discover() async throws -> [DiscoveredAccessory]
+    func authenticate(_ request: AdapterAuthenticationRequest) async throws -> AdapterSessionInfo
+    func readState(deviceID: String) async throws -> AdapterDeviceState
+    func execute(_ command: DeviceCommand, deviceID: String) async throws -> AdapterDeviceState
+    func updates(deviceID: String) -> AsyncStream<AdapterUpdate>
+    func reconnect() async throws
+    func healthCheck() async -> AdapterHealth
+    func disconnect() async
 }
 
 actor AdapterRegistry {
@@ -19,7 +61,22 @@ actor AdapterRegistry {
 
     func discover(brand: String) async -> [DiscoveredAccessory] {
         guard let adapter = adapters[brand] else { return [] }
-        return await adapter.discover()
+        do {
+            return try await adapter.discover()
+        } catch {
+            return []
+        }
+    }
+
+    func health(brand: String) async -> AdapterHealth {
+        guard let adapter = adapters[brand] else {
+            return AdapterHealth(
+                status: .disconnected,
+                detail: "No production adapter is registered.",
+                checkedAt: .now
+            )
+        }
+        return await adapter.healthCheck()
     }
 }
 
@@ -134,6 +191,7 @@ final class LocalDiscoveryController: NSObject, ObservableObject, @unchecked Sen
         let serviceTypes = [
             "_hap._tcp",
             "_matter._tcp",
+            "_shelly._tcp",
             "_http._tcp",
             "_rtsp._tcp",
             "_mqtt._tcp"
@@ -192,6 +250,7 @@ final class LocalDiscoveryController: NSObject, ObservableObject, @unchecked Sen
         if text.contains("samsung") { return "Samsung" }
         if text.contains("midea") || text.contains("mdv") { return "MDV / Midea" }
         if text.contains("electrolux") { return "Electrolux" }
+        if text.contains("shelly") { return "Shelly" }
         return "Unknown manufacturer"
     }
 
@@ -222,12 +281,14 @@ final class LocalDiscoveryController: NSObject, ObservableObject, @unchecked Sen
         if text.contains("p100") || text.contains("plug") || text.contains("outlet") {
             return .smartPlug
         }
+        if text.contains("shelly") { return .smartPlug }
         return .normalLight
     }
 
     private func protocols(forBonjourType type: String) -> [DeviceProtocol] {
         if type.contains("_hap") { return [.homeKit, .localWifi] }
         if type.contains("_matter") { return [.matter, .localWifi] }
+        if type.contains("_shelly") { return [.localWifi] }
         if type.contains("_mqtt") { return [.mqtt, .localWifi] }
         return [.localWifi]
     }

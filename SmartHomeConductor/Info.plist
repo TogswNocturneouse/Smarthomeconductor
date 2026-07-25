@@ -21,6 +21,7 @@
 	<array>
 		<string>_hap._tcp</string>
 		<string>_matter._tcp</string>
+		<string>_shelly._tcp</string>
 		<string>_http._tcp</string>
 		<string>_rtsp._tcp</string>
 		<string>_mqtt._tcp</string>

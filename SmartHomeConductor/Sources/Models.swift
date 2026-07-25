@@ -162,10 +162,57 @@ struct ClassifierSlot: Identifiable, Hashable, Codable, Sendable {
 }
 
 struct AppPreferences: Codable, Equatable, Sendable {
-    var localProcessingOnly = true
-    var hapticsEnabled = true
-    var showOfflineDevices = true
-    var reducedGlow = true
+    var localProcessingOnly: Bool
+    var hapticsEnabled: Bool
+    var showOfflineDevices: Bool
+    var reducedGlow: Bool
+    var assistantLightControlAllowed: Bool
+
+    init(
+        localProcessingOnly: Bool = true,
+        hapticsEnabled: Bool = true,
+        showOfflineDevices: Bool = true,
+        reducedGlow: Bool = true,
+        assistantLightControlAllowed: Bool = false
+    ) {
+        self.localProcessingOnly = localProcessingOnly
+        self.hapticsEnabled = hapticsEnabled
+        self.showOfflineDevices = showOfflineDevices
+        self.reducedGlow = reducedGlow
+        self.assistantLightControlAllowed = assistantLightControlAllowed
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case localProcessingOnly
+        case hapticsEnabled
+        case showOfflineDevices
+        case reducedGlow
+        case assistantLightControlAllowed
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        localProcessingOnly = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .localProcessingOnly
+        ) ?? true
+        hapticsEnabled = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .hapticsEnabled
+        ) ?? true
+        showOfflineDevices = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .showOfflineDevices
+        ) ?? true
+        reducedGlow = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .reducedGlow
+        ) ?? true
+        assistantLightControlAllowed = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .assistantLightControlAllowed
+        ) ?? false
+    }
 }
 
 struct EnvironmentalSummary: Equatable, Sendable {

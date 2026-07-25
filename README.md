@@ -1,21 +1,33 @@
 # SmartHomeConductor
 
-Native SwiftUI smart-home inventory, discovery, and control foundation for iPhone and Mac Catalyst.
+Native SwiftUI smart-home inventory, discovery, safety, and orchestration foundation
+for iPhone and Mac Catalyst.
 
 ## Current Build
 
-- User-owned inventory with persistent manual add and delete
+- User-owned inventory stored in normalized SwiftData records
 - Initial inventory for the Electrolux Wellbeing A5, Xiaomi Air Purifier 4 Compact, MDV split AC, Samsung Smart TV, and the listed Tapo devices
 - No simulated online devices, sensor readings, events, automations, or bridge commands
 - Real Bluetooth advertisement scanning with Core Bluetooth
-- Real Bonjour browsing for HomeKit, Matter, HTTP, RTSP, and MQTT services
+- Real Bonjour browsing for HomeKit, Matter, Shelly, HTTP, RTSP, and MQTT services
 - Apple Home accessory and room import through HomeKit
-- Explicit distinction between discovered, imported, reachable, and controllable devices
+- Explicit distinction between discovered, imported, reachable, and physically confirmed control
+- Typed command authorization, confirmation rules, and persistent audit records
+- Versioned home configuration export and import; credentials are excluded
+- Keychain-only integration credential boundary
 - Local assistant discovery command and model-specific connection guidance
 - Bundled Core ML sound model with Sound Analysis microphone streaming
-- Adaptive iPhone and Mac Catalyst interface with a restrained animated marble surface
+- Adaptive iPhone and Mac Catalyst interface with application menu commands, keyboard shortcuts, and separate settings and audit windows
+- Automated GitHub verification and Release creation
+- App icon and privacy manifest
+
+Vendor control adapters are not advertised as complete. The app currently provides
+inventory, discovery, Apple Home import, policy, persistence, and adapter boundaries.
+Physical control requires a tested authenticated adapter and real-device validation.
 
 See [CONNECTIVITY.md](CONNECTIVITY.md) for the device and integration matrix.
+See [Documentation/COMMERCIAL_READINESS.md](Documentation/COMMERCIAL_READINESS.md)
+for release gates and external actions.
 
 ## Run
 
@@ -39,15 +51,28 @@ Open the project in Xcode:
 ./Scripts/manage.sh open
 ```
 
+Create an unsigned universal Mac Catalyst archive:
+
+```bash
+./Scripts/archive-mac.sh unsigned
+```
+
+Signed and notarized modes require the Apple identities and Keychain profile documented
+in the commercial-readiness ledger.
+
 HomeKit import on a physical device requires a signing profile with the HomeKit capability. Bluetooth, Apple Home, microphone, and local-network access remain subject to system permission.
 
 ## Structure
 
-- `AppStore.swift`: persistent user inventory, state, and guarded actions
-- `IntegrationCore.swift`: HomeKit, Bluetooth, and Bonjour discovery
+- `HomePersistence.swift`: SwiftData home schema, legacy migration, and export package
+- `CommandSafety.swift`: typed commands, risk policy, confirmations, and audits
+- `CredentialStore.swift`: Keychain credential boundary
+- `AppStore.swift`: observable home state and guarded actions
+- `IntegrationCore.swift`: production adapter lifecycle plus HomeKit, Bluetooth, and Bonjour discovery
 - `SoundClassifierController.swift`: Core ML and Sound Analysis stream
 - `Components.swift`: black-marble visual system and interaction states
-- `ContentView.swift`: adaptive iPhone menu and Mac sidebar
+- `ContentView.swift`: adaptive iPhone menu, Mac sidebar, and operational toolbar
+- `AppNavigation.swift`: app menu commands and keyboard shortcuts
 
 ## Optional AI Gateway
 
