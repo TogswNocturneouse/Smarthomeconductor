@@ -109,11 +109,51 @@ struct FrameworkPlan: Identifiable, Hashable {
     var symbol: String
 }
 
+enum AdapterStage: String, Identifiable {
+    case ready = "Ready"
+    case scaffolded = "Scaffolded"
+    case planned = "Planned"
+
+    var id: String { rawValue }
+}
+
+struct BrandAdapterPlan: Identifiable, Hashable {
+    let id = UUID()
+    var brand: String
+    var ecosystem: String
+    var stage: AdapterStage
+    var deviceKinds: [DeviceKind]
+    var connectionPlan: String
+    var nextAction: String
+    var symbol: String
+}
+
+struct BridgeCommand: Identifiable, Hashable {
+    let id = UUID()
+    var name: String
+    var transport: DeviceProtocol
+    var target: String
+    var payload: String
+    var safetyNote: String
+}
+
+struct ClassifierSlot: Identifiable, Hashable {
+    let id = UUID()
+    var name: String
+    var modelFile: String
+    var input: String
+    var outputs: [String]
+    var nextAction: String
+}
+
 final class AppStore: ObservableObject {
     @Published var devices: [SmartDevice] = SampleData.devices
     @Published var signals: [SignalEvent] = SampleData.signals
     @Published var rules: [AutomationRule] = SampleData.rules
     @Published var frameworks: [FrameworkPlan] = SampleData.frameworks
+    @Published var brandAdapters: [BrandAdapterPlan] = SampleData.brandAdapters
+    @Published var bridgeCommands: [BridgeCommand] = SampleData.bridgeCommands
+    @Published var classifierSlots: [ClassifierSlot] = SampleData.classifierSlots
 
     var onlineDeviceCount: Int {
         devices.filter(\.isOnline).count

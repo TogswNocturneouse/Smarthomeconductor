@@ -4,6 +4,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case home = "Home"
     case devices = "Devices"
     case signals = "Signals"
+    case integrations = "Integrations"
     case logic = "Logic"
     case settings = "Settings"
 
@@ -14,6 +15,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .home: "house.fill"
         case .devices: "square.grid.2x2.fill"
         case .signals: "waveform.path.ecg"
+        case .integrations: "antenna.radiowaves.left.and.right"
         case .logic: "point.3.connected.trianglepath.dotted"
         case .settings: "gearshape.fill"
         }
@@ -36,6 +38,10 @@ struct ContentView: View {
             SignalsView()
                 .tag(AppTab.signals)
                 .tabItem { Label(AppTab.signals.rawValue, systemImage: AppTab.signals.symbol) }
+
+            IntegrationsView()
+                .tag(AppTab.integrations)
+                .tabItem { Label(AppTab.integrations.rawValue, systemImage: AppTab.integrations.symbol) }
 
             LogicView()
                 .tag(AppTab.logic)

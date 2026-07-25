@@ -196,4 +196,26 @@ enum SampleData {
         FrameworkPlan(name: "Core Bluetooth", purpose: "Hub and sensor discovery", status: "Planned", symbol: "dot.radiowaves.left.and.right"),
         FrameworkPlan(name: "Network", purpose: "Local bridge, camera, MQTT, WebSocket", status: "Planned", symbol: "network")
     ]
+
+
+    static let brandAdapters: [BrandAdapterPlan] = [
+        BrandAdapterPlan(brand: "TP-Link / Tapo", ecosystem: "Tapo + Kasa style local/cloud control", stage: .scaffolded, deviceKinds: [.normalLight, .dimmerLight, .colorLight, .camera, .smartHub], connectionPlan: "Prefer local LAN discovery where available; fall back to account API only with explicit user login.", nextAction: "Create Tapo adapter service with discovery, auth placeholder and command mapping.", symbol: "lightbulb.led"),
+        BrandAdapterPlan(brand: "MDV / Midea", ecosystem: "Midea climate devices", stage: .scaffolded, deviceKinds: [.airConditioner], connectionPlan: "Treat AC as climate capability first; support IR fallback through Conductor bridge.", nextAction: "Define cooling, fan, target temperature and mode mapping.", symbol: "snowflake"),
+        BrandAdapterPlan(brand: "Xiaomi", ecosystem: "Mi Home / Aqara-style sensors and hubs", stage: .planned, deviceKinds: [.climateSensor, .lightSensor, .smartHub, .purifier, .camera], connectionPlan: "Use Matter/HomeKit path first for supported devices; keep vendor adapter isolated.", nextAction: "Map sensors, purifier readings and hub bridge roles.", symbol: "sensor"),
+        BrandAdapterPlan(brand: "Electrolux", ecosystem: "Air and appliance devices", stage: .planned, deviceKinds: [.purifier, .airConditioner], connectionPlan: "Start with air quality, fan, power and climate capabilities.", nextAction: "Build appliance capability matrix before API login work.", symbol: "wind"),
+        BrandAdapterPlan(brand: "Samsung", ecosystem: "SmartThings and Smart Hub devices", stage: .scaffolded, deviceKinds: [.smartTV, .smartHub, .camera, .airConditioner, .purifier], connectionPlan: "Use SmartThings as primary integration and IR fallback for TV/AC essentials.", nextAction: "Create SmartThings adapter shape and TV/media control model.", symbol: "tv"),
+        BrandAdapterPlan(brand: "Shelly", ecosystem: "Local relay, dimmer and sensor devices", stage: .ready, deviceKinds: [.normalLight, .dimmerLight, .lightSensor, .smartHub], connectionPlan: "Prioritize local HTTP/MQTT control; no cloud required for core relay use.", nextAction: "Implement local device endpoint model and relay/dimmer commands.", symbol: "switch.2")
+    ]
+
+    static let bridgeCommands: [BridgeCommand] = [
+        BridgeCommand(name: "Samsung TV power", transport: .infrared, target: "Smart TV", payload: "NEC:TV_POWER", safetyNote: "Confirm target room before replay."),
+        BridgeCommand(name: "Midea AC cool 24", transport: .infrared, target: "Wall AC", payload: "RAW:AC_COOL_24_AUTO", safetyNote: "Throttle repeated sends to protect compressor."),
+        BridgeCommand(name: "Shelly relay pulse", transport: .mqtt, target: "Ceiling light relay", payload: "shellies/relay/0/command:on", safetyNote: "Local network only."),
+        BridgeCommand(name: "RF legacy relay", transport: .radioFrequency, target: "Generic relay", payload: "433:1011001010", safetyNote: "Require paired device fingerprint.")
+    ]
+
+    static let classifierSlots: [ClassifierSlot] = [
+        ClassifierSlot(name: "Sound classifier", modelFile: "MySoundClassifier.mlmodel", input: "Microphone frames, local only", outputs: ["Doorbell", "Fan vibration", "Bark", "Alarm"], nextAction: "Drop compiled model into the app bundle and connect Sound Analysis.")
+    ]
+
 }
